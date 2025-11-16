@@ -1,0 +1,55 @@
+{
+  "$schema": "https://smapi.io/schemas/content-patcher.json",
+  "Format": "2.8.0",
+  "Changes": [
+    {
+      "Action": "Load",
+      "Target": "{{ModId}}/jars, {{ModId}}/sraj, {{ModId}}/keggy",
+      "FromFile": "assets/{{TargetWithoutPath}}.png"
+    },
+    {
+      "Action": "EditData",
+      "Target": "mushymato.DISCO/Data/{{ModId}}",
+      "Entries": {
+        "Juicey": {
+          "TypeIdentifier": "(O)",
+          "LocalItemId": "350",
+          "SourceTexture": "{{ModId}}/jars",
+          "Rules": [
+            {
+              "RequiredColor": "255 128 0",
+              "SpriteIndexList": 0
+            },
+            {
+              "RequiredColor": "255 230 0",
+              "SpriteIndexList": 2
+            },
+            {
+              "RequiredContextTags": "10 143 0",
+              "SpriteIndexList": 4
+            }
+          ]
+        },
+        "Keggy": {
+          "TypeIdentifier": "(BC)",
+          "LocalItemId": "12",
+          "SourceTexture": "{{ModId}}/keggy",
+          "Rules": [
+            {
+              "SpriteIndexList": "0,1,2",
+              "IncludeDefaultSpriteIndex": true,
+            },
+          ]
+        }
+      }
+    },
+    {
+      "Action": "EditImage",
+      "Target": "{{ModId}}/jars",
+      "FromFile": "assets/sraj.png",
+      "When": {
+        "HasFlag": "INVERT_JARS"
+      }
+    }
+  ]
+}
