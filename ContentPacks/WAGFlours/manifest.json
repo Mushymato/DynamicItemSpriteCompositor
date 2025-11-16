@@ -1,0 +1,17 @@
+{
+  "Name": "DIS Test",
+  "Author": "mushymato",
+  "Version": "1.0.0",
+  "Description": "DaddySheetIndex and MommySheetIndex",
+  "UniqueID": "mushymato.DISCO.WAGFlours",
+  "MinimumApiVersion": "4.0.0",
+  "ContentPackFor": {
+    "UniqueID": "Pathoschild.ContentPatcher"
+  },
+  "Dependencies": [
+    {
+      "UniqueID": "mushymato.DISCO",
+      "IsRequired": true
+    }
+  ]
+}

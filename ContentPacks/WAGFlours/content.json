@@ -1,0 +1,88 @@
+{
+  "$schema": "https://smapi.io/schemas/content-patcher.json",
+  "Format": "2.8.0",
+  "Changes": [
+    {
+      "Action": "EditData",
+      "Target": "Strings/Objects",
+      "Entries": {
+        "{{ModId}}_FlourName": "{0} Flour",
+        "WheatFlour_Description": "A common cooking ingredient made from crushed {0}."
+      }
+    },
+    {
+      "Action": "EditData",
+      "Target": "Data/Machines",
+      "TargetField": [
+        "(BC)Dehydrator",
+        "OutputRules"
+      ],
+      "Entries": {
+        "{{ModId}}_Flour": {
+          "Id": "{{ModId}}_Flour",
+          "Triggers": [
+            {
+              "Trigger": "ItemPlacedInMachine",
+              "RequiredTags": [
+                "category_vegetable"
+              ],
+              "RequiredCount": 1
+            },
+            {
+              "Trigger": "ItemPlacedInMachine",
+              "RequiredTags": [
+                "category_fruits"
+              ],
+              "RequiredCount": 1
+            }
+          ],
+          "OutputItem": [
+            {
+              "Id": "{{ModId}}_Flour",
+              "ItemId": "(O)246",
+              "ObjectDisplayName": "[LocalizedText Strings\\Objects:{{ModId}}_FlourName %PRESERVED_DISPLAY_NAME]",
+              "ObjectInternalName": "{0} FLour",
+              "PreserveId": "DROP_IN"
+            }
+          ]
+        }
+      },
+      "MoveEntries": [
+        {
+          "ID": "{{ModId}}_Flour",
+          "ToPosition": "Top"
+        }
+      ]
+    },
+    {
+      "Action": "Load",
+      "Target": "{{ModId}}/wagflours",
+      "FromFile": "assets/{{TargetWithoutPath}}.png"
+    },
+    {
+      "Action": "EditData",
+      "Target": "mushymato.DISCO/Data/{{ModId}}",
+      "Entries": {
+        "Flour": {
+          "TypeIdentifier": "(O)",
+          "LocalItemId": "246",
+          "SourceTexture": "{{ModId}}/wagflours",
+          "Rules": [
+            {
+              "RequiredContextTags": "preserve_sheet_index_270",
+              "SpriteIndexList": 0
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_262",
+              "SpriteIndexList": 1
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_88",
+              "SpriteIndexList": 2
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

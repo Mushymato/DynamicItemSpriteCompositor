@@ -6,6 +6,8 @@ namespace DynamicItemSpriteCompositor.Framework;
 
 internal static class Patches
 {
+    internal static bool Disabled { get; set; } = false;
+
     internal static void Register()
     {
         Harmony harmony = new(ModEntry.ModId);
@@ -25,6 +27,8 @@ internal static class Patches
 
     private static void Item_ResetParentSheetIndex_Postfix(Item __instance)
     {
+        if (Disabled)
+            return;
         ModEntry.manager.ApplyDynamicSpriteIndex(__instance, watch: false);
         ModEntry.manager.PushItemToApplyDynamicSpriteIn1Tick(__instance);
     }

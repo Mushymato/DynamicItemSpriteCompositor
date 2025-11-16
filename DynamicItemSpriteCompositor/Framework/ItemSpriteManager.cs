@@ -54,7 +54,9 @@ internal sealed class ItemSpriteManager
         this.helper.Events.Content.AssetRequested += OnAssetRequested;
         this.helper.Events.Content.AssetsInvalidated += OnAssetsInvalidated;
         this.helper.Events.GameLoop.UpdateTicked += OnUpdatedTicked;
-        this.helper.Events.GameLoop.DayStarted += OnDayStarted;
+        this.helper.Events.GameLoop.SaveLoaded += ApplyDynamicSpriteIndexToAllItems;
+        this.helper.Events.GameLoop.Saving += OnSaving;
+        this.helper.Events.GameLoop.Saved += ApplyDynamicSpriteIndexToAllItems;
         this.helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
 
         helper.ConsoleCommands.Add(
@@ -191,7 +193,7 @@ internal sealed class ItemSpriteManager
             if (TryGetItemSpriteCompForQualifiedItemId(qId, out ItemSpriteComp? itemSpriteComp))
             {
                 e.LoadFrom(itemSpriteComp.Load, AssetLoadPriority.Exclusive);
-                e.Edit(itemSpriteComp.Edit, AssetEditPriority.Late);
+                e.Edit(itemSpriteComp.Edit, AssetEditPriority.Early);
             }
         }
     }
@@ -288,12 +290,29 @@ internal sealed class ItemSpriteManager
         itemToAtlas.Clear();
     }
 
-    private void OnDayStarted(object? sender, DayStartedEventArgs e)
+    private void OnSaving(object? sender, SavingEventArgs e)
     {
         foreach (ItemSpriteComp itemSpriteComp in itemToAtlas.Values)
         {
             itemSpriteComp.ClearWatchedItems();
         }
+        Patches.Disabled = true;
+        try
+        {
+            Utility.ForEachItem(item =>
+            {
+                item.ResetParentSheetIndex();
+                return true;
+            });
+        }
+        finally
+        {
+            Patches.Disabled = false;
+        }
+    }
+
+    private void ApplyDynamicSpriteIndexToAllItems(object? sender, EventArgs e)
+    {
         Utility.ForEachItem(item =>
         {
             ApplyDynamicSpriteIndex(item);
