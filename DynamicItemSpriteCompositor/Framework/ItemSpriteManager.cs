@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using DynamicItemSpriteCompositor.Models;
-using Microsoft.Xna.Framework;
+using HarmonyLib;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -16,21 +17,26 @@ internal sealed class ItemSpriteManager
 
     internal readonly List<IAssetName> orderedValidModAssets = [];
     private readonly Dictionary<IAssetName, Dictionary<string, ItemSpriteRuleAtlas>?> modDataAssets = [];
-    private readonly Dictionary<string, ItemSpriteComp> itemToAtlas = [];
+    private readonly Dictionary<string, ItemSpriteComp> qIdToComp = [];
     internal const string TxPrefix = $"{ModEntry.ModId}@Tx";
 
     private readonly HashSet<IAssetName> willInvalidateIn1Tick = [];
     private readonly HashSet<string> needSpriteIndexRecheckIn2Tick = [];
-    private readonly HashSet<WeakReference<Item>> willApplyDynamicSpriteIn1Tick = [];
-
-    internal void PushItemToApplyDynamicSpriteIn1Tick(Item item) => willApplyDynamicSpriteIn1Tick.Add(new(item));
+    private readonly ConditionalWeakTable<Item, ItemSpriteIndexWatcher> watchedItems = [];
 
     internal ItemSpriteManager(IModHelper helper)
     {
         this.helper = helper;
         foreach (IModInfo info in helper.ModRegistry.GetAll())
         {
-            if (info.Manifest.Dependencies.Any(dep => dep.UniqueID.EqualsIgnoreCase(ModEntry.ModId) && dep.IsRequired))
+            if (
+                info.Manifest.Dependencies.Any(dep => dep.UniqueID.EqualsIgnoreCase(ModEntry.ModId) && dep.IsRequired)
+                || (
+                    info.Manifest.ExtraFields.TryGetValue(ModEntry.ModId, out object? specialReq)
+                    && specialReq is bool specialReqBool
+                    && specialReqBool
+                )
+            )
             {
                 IAssetName modAssetName = helper.GameContent.ParseAssetName(
                     string.Concat(ModEntry.ModId, "/Data/", info.Manifest.UniqueID)
@@ -72,10 +78,18 @@ internal sealed class ItemSpriteManager
     {
         string exportDir = Path.Combine(helper.DirectoryPath, "export");
         Directory.CreateDirectory(exportDir);
-        foreach (ItemSpriteComp itemSpriteComp in itemToAtlas.Values)
+        foreach (ItemSpriteComp itemSpriteComp in qIdToComp.Values)
         {
             itemSpriteComp.Export(helper, exportDir);
         }
+    }
+
+    private static ItemMetadata? SafeResolveMetadata(string qualifiedItemId)
+    {
+        Patches.ItemMetadata_SetTypeDefinition_Postfix_Enabled = false;
+        ItemMetadata metadata = ItemRegistry.ResolveMetadata(qualifiedItemId);
+        Patches.ItemMetadata_SetTypeDefinition_Postfix_Enabled = true;
+        return metadata;
     }
 
     internal bool TryGetItemSpriteCompForQualifiedItemId(
@@ -85,7 +99,7 @@ internal sealed class ItemSpriteManager
     {
         itemSpriteComp = null;
         if (
-            ItemRegistry.ResolveMetadata(qualifiedItemId) is not ItemMetadata itemMetadata
+            SafeResolveMetadata(qualifiedItemId) is not ItemMetadata itemMetadata
             || itemMetadata.QualifiedItemId == null
         )
         {
@@ -99,14 +113,15 @@ internal sealed class ItemSpriteManager
             return false;
         }
 
-        if (!itemToAtlas.TryGetValue(qualifiedItemId, out itemSpriteComp))
+        if (!qIdToComp.TryGetValue(qualifiedItemId, out itemSpriteComp))
         {
             itemSpriteComp = new ItemSpriteComp(helper.GameContent);
-            itemToAtlas[qualifiedItemId] = itemSpriteComp;
+            qIdToComp[qualifiedItemId] = itemSpriteComp;
         }
 
         if (itemSpriteComp.IsItemDataValid && itemSpriteComp.IsSpriteRuleAtlasValid)
         {
+            itemSpriteComp.FixAdditionalMetadata(itemMetadata);
             return true;
         }
 
@@ -219,7 +234,7 @@ internal sealed class ItemSpriteManager
                 reloadedModAssets.Add(name);
             }
         }
-        foreach ((string key, ItemSpriteComp itemSpriteComp) in itemToAtlas)
+        foreach ((string key, ItemSpriteComp itemSpriteComp) in qIdToComp)
         {
             if (itemSpriteComp.AssetName is not IAssetName assetName)
             {
@@ -239,10 +254,7 @@ internal sealed class ItemSpriteManager
             )
             {
                 willInvalidateIn1Tick.Add(assetName);
-                if (itemSpriteComp.HasWatchedItems)
-                {
-                    needSpriteIndexRecheckIn2Tick.Add(key);
-                }
+                needSpriteIndexRecheckIn2Tick.Add(key);
             }
         }
     }
@@ -263,52 +275,32 @@ internal sealed class ItemSpriteManager
             {
                 if (TryGetItemSpriteCompForQualifiedItemId(key, out ItemSpriteComp? itemSpriteComp))
                 {
-                    itemSpriteComp.RecheckWatchedItems();
+                    foreach ((Item item, _) in watchedItems)
+                    {
+                        if (item.QualifiedItemId == key)
+                        {
+                            ApplyDynamicSpriteIndex(item);
+                        }
+                    }
                 }
                 else
                 {
-                    itemToAtlas.Remove(key);
+                    qIdToComp.Remove(key);
                 }
             }
             needSpriteIndexRecheckIn2Tick.Clear();
-        }
-        else if (willApplyDynamicSpriteIn1Tick.Any())
-        {
-            foreach (WeakReference<Item> itemRef in willApplyDynamicSpriteIn1Tick)
-            {
-                if (itemRef.TryGetTarget(out Item? item))
-                {
-                    ApplyDynamicSpriteIndex(item);
-                }
-            }
-            willApplyDynamicSpriteIn1Tick.Clear();
         }
     }
 
     private void OnReturnedToTitle(object? sender, ReturnedToTitleEventArgs e)
     {
-        itemToAtlas.Clear();
+        watchedItems.Clear();
+        qIdToComp.Clear();
     }
 
     private void OnSaving(object? sender, SavingEventArgs e)
     {
-        foreach (ItemSpriteComp itemSpriteComp in itemToAtlas.Values)
-        {
-            itemSpriteComp.ClearWatchedItems();
-        }
-        Patches.Disabled = true;
-        try
-        {
-            Utility.ForEachItem(item =>
-            {
-                item.ResetParentSheetIndex();
-                return true;
-            });
-        }
-        finally
-        {
-            Patches.Disabled = false;
-        }
+        watchedItems.Clear();
     }
 
     private void ApplyDynamicSpriteIndexToAllItems(object? sender, EventArgs e)
@@ -329,15 +321,27 @@ internal sealed class ItemSpriteManager
         });
     }
 
-    internal void ApplyDynamicSpriteIndex(Item item, bool watch = true)
+    internal void ApplyDynamicSpriteIndex(Item item)
     {
-        if (!TryGetItemSpriteCompForQualifiedItemId(item.QualifiedItemId, out ItemSpriteComp? itemSpriteComp))
+        if (TryGetItemSpriteCompForQualifiedItemId(item.QualifiedItemId, out ItemSpriteComp? itemSpriteComp))
         {
-            return;
+            if (itemSpriteComp.TryApplySpriteIndexFromRules(item, out int? spriteIndex))
+            {
+                watchedItems.GetValue(item, ItemSpriteIndexWatcher.Make).SpriteIndex = spriteIndex.Value;
+                return;
+            }
         }
-        if (itemSpriteComp.TryApplySpriteIndexFromRules(item, out int? spriteIndex))
+        watchedItems.Remove(item);
+    }
+
+    internal void FixAdditionalMetadata(ItemMetadata metadata)
+    {
+        if (
+            metadata.QualifiedItemId != null
+            && qIdToComp.TryGetValue(metadata.QualifiedItemId, out ItemSpriteComp? itemSpriteComp)
+        )
         {
-            itemSpriteComp.WatchItem(item, spriteIndex.Value);
+            itemSpriteComp.FixAdditionalMetadata(metadata);
         }
     }
 }

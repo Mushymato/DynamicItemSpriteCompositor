@@ -1,12 +1,13 @@
 using HarmonyLib;
 using StardewModdingAPI;
 using StardewValley;
+using StardewValley.ItemTypeDefinitions;
 
 namespace DynamicItemSpriteCompositor.Framework;
 
 internal static class Patches
 {
-    internal static bool Disabled { get; set; } = false;
+    internal static bool ItemMetadata_SetTypeDefinition_Postfix_Enabled { get; set; } = true;
 
     internal static void Register()
     {
@@ -17,6 +18,16 @@ internal static class Patches
             harmony.Patch(
                 original: AccessTools.DeclaredMethod(typeof(Item), nameof(Item.ResetParentSheetIndex)),
                 postfix: new HarmonyMethod(typeof(Patches), nameof(Item_ResetParentSheetIndex_Postfix))
+                {
+                    priority = Priority.Last,
+                }
+            );
+            harmony.Patch(
+                original: AccessTools.DeclaredMethod(typeof(ItemMetadata), "SetTypeDefinition"),
+                postfix: new HarmonyMethod(typeof(Patches), nameof(ItemMetadata_SetTypeDefinition_Postfix))
+                {
+                    priority = Priority.Last,
+                }
             );
         }
         catch (Exception ex)
@@ -27,9 +38,13 @@ internal static class Patches
 
     private static void Item_ResetParentSheetIndex_Postfix(Item __instance)
     {
-        if (Disabled)
+        ModEntry.manager.ApplyDynamicSpriteIndex(__instance);
+    }
+
+    private static void ItemMetadata_SetTypeDefinition_Postfix(ref ItemMetadata __instance)
+    {
+        if (!ItemMetadata_SetTypeDefinition_Postfix_Enabled)
             return;
-        ModEntry.manager.ApplyDynamicSpriteIndex(__instance, watch: false);
-        ModEntry.manager.PushItemToApplyDynamicSpriteIn1Tick(__instance);
+        ModEntry.manager.FixAdditionalMetadata(__instance);
     }
 }

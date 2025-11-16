@@ -1,6 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using DynamicItemSpriteCompositor.Models;
 using HarmonyLib;
 using Microsoft.Xna.Framework;
@@ -29,10 +28,6 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
     internal bool IsItemDataValid => metadata != null;
     internal bool IsSpriteRuleAtlasValid => spriteRuleAtlasList != null;
     private bool loggedInvalid = false;
-    private readonly ConditionalWeakTable<Item, ItemSpriteIndexWatcher> watchedItems = [];
-    internal bool HasWatchedItems => watchedItems.Any();
-
-    internal void ClearWatchedItems() => watchedItems.Clear();
 
     public void UpdateItemMetadataAndSpriteAtlas(
         ItemMetadata metadata,
@@ -64,8 +59,8 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
                 this.spriteSize = new(16, 16);
                 break;
         }
-
         UpdateSpriteAtlas(spriteRuleAtlasList);
+        OverrideParsedItemDataTexture(parsedItemData);
     }
 
     public void UpdateSpriteAtlas(IReadOnlyList<ItemSpriteRuleAtlas> spriteRuleAtlasList)
@@ -90,6 +85,42 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         }
         textureSize = new(Math.Min(maxIdx * spriteSize.X, MAX_WIDTH), ((maxIdx / MAX_WIDTH) + 1) * spriteSize.Y);
         this.spriteRuleAtlasList = spriteRuleAtlasList;
+    }
+
+    internal void FixAdditionalMetadata(ItemMetadata metadata)
+    {
+        if (spriteRuleAtlasList?.Count == 0)
+            return;
+        if (metadata.LocalItemId != metadata.LocalItemId || metadata.TypeIdentifier != metadata.TypeIdentifier)
+            return;
+        if (metadata.GetParsedData() is not ParsedItemData parsedItemData)
+            return;
+
+        OverrideParsedItemDataTexture(parsedItemData);
+    }
+
+    private static readonly FieldInfo ParsedItemData_LoadedTexture = AccessTools.DeclaredField(
+        typeof(ParsedItemData),
+        "LoadedTexture"
+    );
+    private static readonly FieldInfo ParsedItemData_TextureName = AccessTools.DeclaredField(
+        typeof(ParsedItemData),
+        nameof(ParsedItemData.TextureName)
+    );
+    private static readonly FieldInfo ParsedItemData_SpriteIndex = AccessTools.DeclaredField(
+        typeof(ParsedItemData),
+        nameof(ParsedItemData.SpriteIndex)
+    );
+
+    private void OverrideParsedItemDataTexture(ParsedItemData parsedItemData)
+    {
+        if (assetName == null)
+        {
+            return;
+        }
+        ParsedItemData_LoadedTexture?.SetValue(parsedItemData, false);
+        ParsedItemData_SpriteIndex?.SetValue(parsedItemData, 0);
+        ParsedItemData_TextureName?.SetValue(parsedItemData, assetName.Name);
     }
 
     private Rectangle GetSourceRectForIndex(int width, int index) =>
@@ -184,15 +215,6 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         return false;
     }
 
-    private static readonly FieldInfo ParsedItemData_LoadedTexture = AccessTools.DeclaredField(
-        typeof(ParsedItemData),
-        "LoadedTexture"
-    );
-    private static readonly FieldInfo ParsedItemData_TextureName = AccessTools.DeclaredField(
-        typeof(ParsedItemData),
-        nameof(ParsedItemData.TextureName)
-    );
-
     internal bool TryApplySpriteIndexFromRules(Item item, [NotNullWhen(true)] out int? spriteIndex)
     {
         spriteIndex = null;
@@ -253,37 +275,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
                 break;
             }
         }
-
-        ParsedItemData parsedItemData = ItemRegistry.GetData(item.QualifiedItemId);
-        ParsedItemData_LoadedTexture?.SetValue(parsedItemData, false);
-        ParsedItemData_TextureName?.SetValue(parsedItemData, assetName.Name);
         return true;
-    }
-
-    internal void WatchItem(Item item, int spriteIndex) =>
-        watchedItems.GetValue(item, ItemSpriteIndexWatcher.Make).SpriteIndex = spriteIndex;
-
-    internal void RecheckWatchedItems()
-    {
-        List<Item> stopWatching = [];
-        foreach ((Item item, ItemSpriteIndexWatcher watcher) in watchedItems)
-        {
-            if (item.QualifiedItemId != metadata?.QualifiedItemId)
-            {
-                stopWatching.Add(item);
-                continue;
-            }
-            if (!TryApplySpriteIndexFromRules(item, out int? spriteIndex))
-            {
-                stopWatching.Add(item);
-                continue;
-            }
-            watcher.SpriteIndex = spriteIndex.Value;
-        }
-        foreach (Item item in stopWatching)
-        {
-            watchedItems.Remove(item);
-        }
     }
 
     /// Based on https://github.com/Pathoschild/StardewMods/blob/95d695b205199de4bad86770d69a30806d1721a2/ContentPatcher/Framework/Commands/Commands/ExportCommand.cs
@@ -294,7 +286,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         if (metadata != null && spriteRuleAtlasList?.Count > 0 && AssetName != null)
         {
             string fileName = string.Join('_', metadata.QualifiedItemId.Split(Path.GetInvalidFileNameChars()));
-            using Texture2D exported = this.UnPremultiplyTransparency(helper.GameContent.Load<Texture2D>(AssetName));
+            using Texture2D exported = UnPremultiplyTransparency(helper.GameContent.Load<Texture2D>(AssetName));
             string imagePath = Path.Combine(exportDir, $"{fileName}.png");
             using Stream stream = File.Create(imagePath);
             exported.SaveAsPng(stream, exported.Width, exported.Height);
@@ -305,7 +297,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
 
     /// <summary>Reverse premultiplication applied to an image asset by the XNA content pipeline.</summary>
     /// <param name="texture">The texture to adjust.</param>
-    private Texture2D UnPremultiplyTransparency(Texture2D texture)
+    private static Texture2D UnPremultiplyTransparency(Texture2D texture)
     {
         Color[] data = new Color[texture.Width * texture.Height];
         texture.GetData(data);
