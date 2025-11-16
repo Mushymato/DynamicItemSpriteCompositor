@@ -299,6 +299,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             using Stream stream = File.Create(imagePath);
             exported.SaveAsPng(stream, exported.Width, exported.Height);
             helper.Data.WriteJsonFile($"export/{fileName}.json", spriteRuleAtlasList);
+            ModEntry.Log($"Exported '{exportDir}/{fileName}.png' and '{exportDir}/{fileName}.json'", LogLevel.Info);
         }
     }
 

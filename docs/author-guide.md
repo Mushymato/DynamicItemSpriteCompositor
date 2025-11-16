@@ -28,7 +28,7 @@ This is used by DISCO to initialize the base asset instance for the content pack
 
 To add sprites, edit `mushymato.DISCO/Data/{{ModId}}` where `{{ModId}}` is the content patcher mod id token.
 
-This asset is a dictionary of *ItemSpriteRuleAtlas* objects.
+This asset is a dictionary of **ItemSpriteRuleAtlas** objects.
 
 Since the asset name is already your mod id, there's no real need to make the keys unique.
 
@@ -55,14 +55,18 @@ Since the asset name is already your mod id, there's no real need to make the ke
 
 DISCO does not patch draw logic and instead operate directly on the data.
 
-When an item is created, DISCO will combine the *ItemSpriteRuleAtlas* entries provided by every content pack and find the ones that apply to the given item.
-Then, DISCO creates a special texture that combines the original sprite plus every content pack sprite based on the *ItemSpriteRuleAtlas* entries, and calculates a sprite index offset for every sprite involved.
-This special texture becomes the item's new texture (shared across all instances of this item), and the final sprite index is picked based on the *SpriteIndexRule* list given.
+When an item is created, DISCO will combine the **ItemSpriteRuleAtlas** entries provided by every content pack and find the ones that apply to the given item.
+Then, DISCO creates a special composite texture that combines the original sprite plus every content pack sprite based on the **ItemSpriteRuleAtlas** entries, and calculates a sprite index offset for every sprite involved.
+This special composite texture becomes the item's new texture (shared across all instances of this item), and the final sprite index is picked based on the *SpriteIndexRule* list given.
+
+There is a limitation here. If a particular place in question doesn't use `ParsedItemData` to get texture, then the changed texture won't propagate over. This mainly impacts mods that don't use `Item.draw` or `Item.drawInMenu` to display items.
 
 When an item pass all requirements on a *SpriteIndexRule*, it will get a random sprite index from the `SpriteIndexList`.
-When multiple *SpriteIndexRule* across the *ItemSpriteRuleAtlas* provided by the same content pack pass all requirements, their `SpriteIndexList` are combined and a random sprite index is picked from there.
-When multiple *SpriteIndexRule* across the *ItemSpriteRuleAtlas* provided by the different content pack pass all requirements, the content pack that comes later in the dependency tree gets to apply their sprites.
+When multiple *SpriteIndexRule* across the **ItemSpriteRuleAtlas** provided by the same content pack pass all requirements, their `SpriteIndexList` are combined and a random sprite index is picked from there.
+When multiple *SpriteIndexRule* across the **ItemSpriteRuleAtlas** provided by the different content pack pass all requirements, the content pack that comes later in the dependency tree gets to apply their sprites.
 
 The sprite indexes are rechecked in 2 situations:
 - New day started
 - Relevant assets invalidated
+
+To debug any unexpected behavior, use console command `disco-export` to save the combined **ItemSpriteRuleAtlas** data and the special composite texture to DISCO's mod folder.
