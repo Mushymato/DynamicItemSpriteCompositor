@@ -46,7 +46,7 @@ Since the asset name is already your mod id, there's no real need to make the ke
 | Field | Type | Default | Notes |
 | ----- | ---- | ------- | ----- |
 | `RequiredContextTags` | List<string> | _null_ | List of context tags needed, item must have every tag in the list. Inverse tags that start with `!` is also allowed. You can use comma separated list of context tags. |
-| `RequiredColor` | Color | _null_ | This is used for flavored items (ColoredObject) which have a color. You can pass colors in as hex (`#123123`), RGBA (`30 60 90`). For non flavored items, use the color tags in `RequiredContextTags` instead. |
+| `RequiredColor` | Color | _null_ | This is used for flavored items (ColoredObject) which have a color. You can pass colors in as hex (`#123123`), RGBA (`30 60 90`), see [this page](./colortags.md) for list of vanilla colors. For non flavored items, use the color tags in `RequiredContextTags` instead. |
 | `RequiredCondition` | string ([Game State Query](https://stardewvalleywiki.com/Modding:Game_state_queries)) | _null_ | Game state query that the item must fulfill. Item is passed in as the `Target` item. |
 | `SpriteIndexList` | List<int> | _empty_ | List of sprite indicies on your source texture that will be assigned when this rule matches. You can use comma separated list of numbers, or just a single number. |
 | `IncludeDefaultSpriteIndex` | bool | false | If true, include the default sprite index in the list when picking. |
