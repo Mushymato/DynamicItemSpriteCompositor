@@ -39,7 +39,7 @@ Since the asset name is already your mod id, there's no real need to make the ke
 | `TypeIdentifier` | string | `"(O)"` | This is the type identifier part of a qualified item id (e.g. `(O)0`). Currently, only `(O)` and `(BC)` are supported. |
 | `LocalItemId` | string | `"0"` | This is the item id part of a qualified item id (e.g. `(O)0`). |
 | `SourceTexture` | string | _null_ | Source texture asset, where your sprites are on. This must be loaded. |
-| `Rules` | List<*SpriteIndexRule*> | List of rules used to pick dynamic sprite index. |
+| `Rules` | List<**SpriteIndexRule**> | List of rules used to pick dynamic sprite index. |
 
 ### SpriteIndexRule
 
@@ -50,6 +50,7 @@ Since the asset name is already your mod id, there's no real need to make the ke
 | `RequiredCondition` | string ([Game State Query](https://stardewvalleywiki.com/Modding:Game_state_queries)) | _null_ | Game state query that the item must fulfill. Item is passed in as the `Target` item. |
 | `SpriteIndexList` | List<int> | _empty_ | List of sprite indicies on your source texture that will be assigned when this rule matches. You can use comma separated list of numbers, or just a single number. |
 | `IncludeDefaultSpriteIndex` | bool | false | If true, include the default sprite index in the list when picking. |
+| `Precedence` | int | *varies* | This adjusts whether this rule applies before other rules, lower is more prioritized. The default value depends on whether you have set other requirements. <ul><li>Base: 100</li><li>Has `RequiredContextTags`: -100</li><li>Has `RequiredColor`: -50</li><li>Has `RequiredCondition`: -25</li></ul> Setting any value at all overrides the default. |
 
 ## How does it pick index?
 
@@ -57,13 +58,14 @@ DISCO does not patch draw logic and instead operate directly on the data.
 
 When an item is created, DISCO will combine the **ItemSpriteRuleAtlas** entries provided by every content pack and find the ones that apply to the given item.
 Then, DISCO creates a special composite texture that combines the original sprite plus every content pack sprite based on the **ItemSpriteRuleAtlas** entries, and calculates a sprite index offset for every sprite involved.
-This special composite texture becomes the item's new texture (shared across all instances of this item), and the final sprite index is picked based on the *SpriteIndexRule* list given.
+This special composite texture becomes the item's new texture (shared across all instances of this item), and the final sprite index is picked based on the **SpriteIndexRule** list given.
 
 There is a limitation here. If a particular place in question doesn't use `ParsedItemData` to get texture, then the changed texture won't propagate over. This mainly impacts mods that don't use `Item.draw` or `Item.drawInMenu` to display items.
 
-When an item pass all requirements on a *SpriteIndexRule*, it will get a random sprite index from the `SpriteIndexList`.
-When multiple *SpriteIndexRule* across the **ItemSpriteRuleAtlas** provided by the same content pack pass all requirements, their `SpriteIndexList` are combined and a random sprite index is picked from there.
-When multiple *SpriteIndexRule* across the **ItemSpriteRuleAtlas** provided by the different content pack pass all requirements, the content pack that comes later in the dependency tree gets to apply their sprites.
+When an item pass all requirements on a single **SpriteIndexRule**, it will get a random sprite index from the `SpriteIndexList`.
+When an item pass all requirements on multiple **SpriteIndexRule** entries:
+- Only the **SpriteIndexRule** with lowest `Precedence` values are considered, e.g. if there were 2 0 item
+= it will get a random sprite index from the combined `SpriteIndexList` from all rules with equal chance.
 
 The sprite indexes are rechecked in 2 situations:
 - New day started

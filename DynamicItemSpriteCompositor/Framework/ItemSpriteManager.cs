@@ -21,7 +21,6 @@ internal sealed class ItemSpriteManager
 {
     private readonly IModHelper helper;
 
-    internal readonly List<IAssetName> orderedValidModAssets = [];
     private readonly Dictionary<IAssetName, Dictionary<string, ItemSpriteRuleAtlas>?> modDataAssets = [];
     private readonly Dictionary<string, ItemSpriteComp> qIdToComp = [];
 
@@ -60,12 +59,10 @@ internal sealed class ItemSpriteManager
                 IAssetName modAssetName = helper.GameContent.ParseAssetName(
                     string.Concat(ModEntry.ModId, "/Data/", info.Manifest.UniqueID)
                 );
-                orderedValidModAssets.Add(modAssetName);
                 modDataAssets[modAssetName] = null;
                 ModEntry.Log($"Tracking '{modAssetName}' asset for '{info.Manifest.UniqueID}'");
             }
         }
-        orderedValidModAssets.Reverse();
 
         if (modDataAssets.Count == 0)
         {

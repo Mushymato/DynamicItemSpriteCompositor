@@ -354,46 +354,44 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             return false;
         }
 
-        Dictionary<IAssetName, HashSet<int>> perModPossibleIndicies = [];
+        // Dictionary<IAssetName, HashSet<int>> perModPossibleIndicies = [];
+        List<SpriteIndexRule> validRules = [];
         foreach (ItemSpriteRuleAtlas spriteAtlas in this.spriteRuleAtlasList)
         {
             if (spriteAtlas.SourceModAsset == null)
             {
                 continue;
             }
-            if (!perModPossibleIndicies.TryGetValue(spriteAtlas.SourceModAsset, out HashSet<int>? possibleIndicies))
-            {
-                possibleIndicies = [];
-                perModPossibleIndicies[spriteAtlas.SourceModAsset] = possibleIndicies;
-            }
             foreach (SpriteIndexRule spriteIndexRule in spriteAtlas.Rules)
             {
                 if (spriteIndexRule.SpriteIndexList.Count > 0 && spriteIndexRule.ValidForItem(item))
                 {
-                    foreach (int idx in spriteIndexRule.SpriteIndexList)
-                    {
-                        possibleIndicies.Add(idx + spriteAtlas.BaseIndex);
-                    }
-                    if (spriteIndexRule.IncludeDefaultSpriteIndex)
-                    {
-                        possibleIndicies.Add(0);
-                    }
+                    validRules.Add(spriteIndexRule);
                 }
             }
         }
 
         spriteIndex = 0;
-        foreach (IAssetName modAsset in ModEntry.manager.orderedValidModAssets)
+        if (validRules.Count == 0)
         {
-            if (
-                perModPossibleIndicies.TryGetValue(modAsset, out HashSet<int>? possibleIndicies)
-                && possibleIndicies.Count > 0
-            )
+            return true;
+        }
+        int minPrecedence = validRules.Min(rule => rule.Precedence);
+
+        HashSet<int> possibleIndicies = [];
+        foreach (SpriteIndexRule rule in validRules.Where(rule => rule.Precedence == minPrecedence))
+        {
+            possibleIndicies.AddRange(rule.SpriteIndexList);
+            if (rule.IncludeDefaultSpriteIndex)
             {
-                spriteIndex = Random.Shared.ChooseFrom(possibleIndicies.ToList());
-                break;
+                possibleIndicies.Add(0);
             }
         }
+        if (possibleIndicies.Count > 0)
+        {
+            spriteIndex = Random.Shared.ChooseFrom(possibleIndicies.ToList());
+        }
+
         return true;
     }
 
