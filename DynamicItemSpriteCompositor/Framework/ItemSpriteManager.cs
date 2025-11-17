@@ -10,13 +10,6 @@ using StardewValley.ItemTypeDefinitions;
 
 namespace DynamicItemSpriteCompositor.Framework;
 
-internal sealed record ItemSpriteIndexHolder()
-{
-    internal int SpriteIndex { get; set; } = -1;
-
-    internal static ItemSpriteIndexHolder Make(Item key) => new();
-}
-
 internal sealed class ItemSpriteManager
 {
     private readonly IModHelper helper;
@@ -27,7 +20,8 @@ internal sealed class ItemSpriteManager
 
     private readonly HashSet<string> needItemSpriteCompRecheck = [];
     private readonly List<WeakReference<Item>> needApplyDynamicSpriteIndex = [];
-    private readonly ConditionalWeakTable<Item, ItemSpriteIndexHolder> watchedItems = [];
+    private readonly ConditionalWeakTable<Item, ItemSpriteIndexWatcher> watchedItems = [];
+    internal int ParentSheetIndexUsageCount = 0;
 
     internal void AddToNeedApplyDynamicSpriteIndex(Item item) => needApplyDynamicSpriteIndex.Add(new(item));
 
@@ -70,8 +64,8 @@ internal sealed class ItemSpriteManager
         this.helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
         this.helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
 
-        this.helper.Events.Display.Rendering += OnRendering;
-        this.helper.Events.Display.Rendered += OnRendered;
+        // this.helper.Events.Display.Rendering += OnRendering;
+        // this.helper.Events.Display.Rendered += OnRendered;
 
         helper.ConsoleCommands.Add(
             "disco-export",
@@ -137,6 +131,7 @@ internal sealed class ItemSpriteManager
         if (itemSpriteComp.IsDataValid && !itemSpriteComp.IsCompTxValid)
         {
             itemSpriteComp.UpdateCompTx();
+            itemSpriteComp.FixAdditionalMetadata(itemMetadata);
             return true;
         }
 
@@ -296,16 +291,6 @@ internal sealed class ItemSpriteManager
         qIdToComp.Clear();
     }
 
-    private void OnRendering(object? sender, RenderingEventArgs e)
-    {
-        Patches.Item_get_ParentSheetIndex_Postfix_Enabled = true;
-    }
-
-    private void OnRendered(object? sender, RenderedEventArgs e)
-    {
-        Patches.Item_get_ParentSheetIndex_Postfix_Enabled = false;
-    }
-
     private void OnSaveLoaded_ModDisabled(object? sender, SaveLoadedEventArgs e)
     {
         Utility.ForEachItem(item =>
@@ -322,7 +307,7 @@ internal sealed class ItemSpriteManager
             if (itemSpriteComp.TryApplySpriteIndexFromRules(item, out int? spriteIndex))
             {
                 if (spriteIndex.Value > 0)
-                    watchedItems.GetValue(item, ItemSpriteIndexHolder.Make).SpriteIndex = spriteIndex.Value;
+                    watchedItems.GetValue(item, ItemSpriteIndexWatcher.Make).SpriteIndex = spriteIndex.Value;
                 return;
             }
         }
@@ -332,15 +317,6 @@ internal sealed class ItemSpriteManager
     internal bool EnsureItemSpriteCompForQualifiedItemId(string qualifiedItemId)
     {
         return TryGetItemSpriteCompForQualifiedItemId(qualifiedItemId, out _);
-    }
-
-    internal int? GetSpriteIndex(Item item)
-    {
-        if (watchedItems.TryGetValue(item, out ItemSpriteIndexHolder? watcher))
-        {
-            return watcher.SpriteIndex;
-        }
-        return null;
     }
 
     internal void FixAdditionalMetadata(ItemMetadata metadata)

@@ -44,7 +44,8 @@
               "ObjectInternalName": "{0} FLour",
               "PreserveId": "DROP_IN"
             }
-          ]
+          ],
+          "MinutesUntilReady": 60
         }
       },
       "MoveEntries": [
@@ -81,7 +82,32 @@
               "SpriteIndexList": 2
             }
           ]
-        }
+        },
+        // "Dehydrator": {
+        //   "TypeIdentifier": "(BC)",
+        //   "LocalItemId": "Dehydrator",
+        //   "SourceTexture": "{{ModId}}/machines",
+        //   "Rules": [
+        //     {
+        //       "HeldObject": {
+        //         "RequiredContextTags": "preserve_sheet_index_270",
+        //       },
+        //       "SpriteIndexList": 0
+        //     },
+        //     {
+        //       "HeldObject": {
+        //         "RequiredContextTags": "preserve_sheet_index_262",
+        //       },
+        //       "SpriteIndexList": 1
+        //     },
+        //     {
+        //       "HeldObject": {
+        //         "RequiredContextTags": "preserve_sheet_index_88",
+        //       },
+        //       "SpriteIndexList": 2
+        //     }
+        //   ]
+        // }
       }
     }
   ]

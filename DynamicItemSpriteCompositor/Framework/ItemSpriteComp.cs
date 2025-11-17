@@ -1,7 +1,5 @@
-using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Text.Json.Serialization;
 using DynamicItemSpriteCompositor.Models;
 using HarmonyLib;
 using Microsoft.Xna.Framework;
@@ -223,8 +221,14 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         {
             int sourceArrayStart = sourceRect.X + (sourceRect.Y + r) * sourceTxWidth;
             int targetArrayStart = targetRect.X + (targetRect.Y + r) * targetTxWidth;
-            // public static void Copy(Array sourceArray, long sourceIndex, Array destinationArray, long destinationIndex, long length);
-            Array.Copy(sourceData, sourceArrayStart, targetData, targetArrayStart, spriteSize.X);
+            if (sourceArrayStart + spriteSize.X > sourceData.Length)
+            {
+                Array.Fill(targetData, Color.Transparent, targetArrayStart, spriteSize.X);
+            }
+            else
+            {
+                Array.Copy(sourceData, sourceArrayStart, targetData, targetArrayStart, spriteSize.X);
+            }
         }
     }
 
@@ -395,11 +399,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             ); // don't use named parameters, which are inconsistent between MonoGame (e.g. 'alpha') and XNA (e.g. 'a')
         }
 
-        Texture2D result = new Texture2D(
-            texture.GraphicsDevice ?? Game1.graphics.GraphicsDevice,
-            texture.Width,
-            texture.Height
-        );
+        Texture2D result = new(texture.GraphicsDevice ?? Game1.graphics.GraphicsDevice, texture.Width, texture.Height);
         result.SetData(data);
         return result;
     }

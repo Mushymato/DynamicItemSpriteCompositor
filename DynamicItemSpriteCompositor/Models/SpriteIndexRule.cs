@@ -5,7 +5,7 @@ using StardewValley.Objects;
 
 namespace DynamicItemSpriteCompositor.Models;
 
-public class SpriteIndexRequirement
+public sealed class SpriteIndexRule
 {
     [JsonConverter(typeof(ContextTagSetConverter))]
     public List<string>? RequiredContextTags { get; set; } = null;
@@ -14,7 +14,11 @@ public class SpriteIndexRequirement
     public Color? RequiredColor { get; set; } = null;
     public string? RequiredCondition { get; set; } = null;
 
-    internal bool BaseValidForItem(Item item)
+    [JsonConverter(typeof(StringIntListConverter))]
+    public List<int> SpriteIndexList { get; set; } = [];
+    public bool IncludeDefaultSpriteIndex { get; set; } = false;
+
+    internal bool ValidForItem(Item item)
     {
         if (RequiredColor != null && (item is not ColoredObject cObj || RequiredColor != cObj.color.Value))
         {
@@ -27,31 +31,6 @@ public class SpriteIndexRequirement
         if (RequiredCondition != null && GameStateQuery.CheckConditions(RequiredCondition, targetItem: item))
         {
             return false;
-        }
-        return true;
-    }
-}
-
-public sealed class SpriteIndexRule : SpriteIndexRequirement
-{
-    public SpriteIndexRequirement? HeldObject;
-
-    [JsonConverter(typeof(StringIntListConverter))]
-    public List<int> SpriteIndexList { get; set; } = [];
-    public bool IncludeDefaultSpriteIndex { get; set; } = false;
-
-    internal bool ValidForItem(Item item)
-    {
-        if (!BaseValidForItem(item))
-        {
-            return false;
-        }
-        if (HeldObject != null && item is SObject obj && obj.heldObject.Value is SObject heldObj)
-        {
-            if (!HeldObject.BaseValidForItem(heldObj))
-            {
-                return false;
-            }
         }
         return true;
     }
