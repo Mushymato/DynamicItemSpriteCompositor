@@ -9,6 +9,7 @@ using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Extensions;
 using StardewValley.GameData.BigCraftables;
+using StardewValley.GameData.Machines;
 using StardewValley.GameData.Objects;
 using StardewValley.ItemTypeDefinitions;
 
@@ -45,20 +46,42 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         this.baseTextureAsset = content.ParseAssetName(parsedItemData.TextureName);
 
         this.spritePerIndex = 1;
+        if (ModEntry.manager.SpecialSpritesPerIndex?.TryGetValue(metadata.QualifiedItemId, out int specialSPI) ?? false)
+        {
+            spritePerIndex = specialSPI;
+        }
         switch (this.metadata.TypeIdentifier)
         {
             case "(BC)":
                 if (Game1.bigCraftableData.TryGetValue(metadata.LocalItemId, out BigCraftableData? bcData))
                 {
                     this.baseSpriteIndex = bcData.SpriteIndex;
+                    if (bcData.Name.Contains("Seasonal"))
+                    {
+                        // TODO: this actually has more funny % 4 logic to it, not gonna deal with it for now
+                        this.spritePerIndex = Math.Max(spritePerIndex, 4);
+                    }
+                }
+                if (
+                    DataLoader
+                        .Machines(Game1.content)
+                        .TryGetValue(metadata.QualifiedItemId, out MachineData? machineData)
+                )
+                {
+                    if (machineData.ShowNextIndexWhileWorking || machineData.ShowNextIndexWhenReady)
+                    {
+                        this.spritePerIndex = Math.Max(this.spritePerIndex, 2);
+                    }
+                    CheckMachineEffectsSpritePerIndex(machineData.LoadEffects);
+                    CheckMachineEffectsSpritePerIndex(machineData.WorkingEffects);
                 }
                 this.spriteSize = new(16, 32);
                 break;
             case "(O)":
                 if (Game1.objectData.TryGetValue(metadata.LocalItemId, out ObjectData? objectData))
                 {
-                    this.spritePerIndex = objectData.ColorOverlayFromNextIndex ? 2 : 1;
                     this.baseSpriteIndex = objectData.SpriteIndex;
+                    this.spritePerIndex = Math.Max(this.spritePerIndex, objectData.ColorOverlayFromNextIndex ? 2 : 1);
                 }
                 goto default;
             default:
@@ -125,6 +148,19 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
 
         OverrideParsedItemDataTexture(parsedItemData);
         IsDataValid = true;
+    }
+
+    private void CheckMachineEffectsSpritePerIndex(List<MachineEffects> machineEffects)
+    {
+        if (machineEffects == null)
+        {
+            return;
+        }
+        foreach (MachineEffects effects in machineEffects)
+        {
+            if (effects.Frames?.Count > 0)
+                this.spritePerIndex = Math.Max(this.spritePerIndex, effects.Frames.Max());
+        }
     }
 
     private Rectangle GetSourceRectForIndex(int width, int index) =>
@@ -372,7 +408,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             using Texture2D exported = UnPremultiplyTransparency(compTx);
             using Stream stream = File.Create(Path.Combine(exportDir, $"{fileName}.png"));
             exported.SaveAsPng(stream, exported.Width, exported.Height);
-            string jsonStr = JsonConvert.SerializeObject(spriteRuleAtlasList);
+            string jsonStr = JsonConvert.SerializeObject(spriteRuleAtlasList, Formatting.Indented);
             File.WriteAllText(Path.Combine(exportDir, $"{fileName}.json"), jsonStr);
             ModEntry.Log($"- {fileName}.(png|json)", LogLevel.Info);
         }

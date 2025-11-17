@@ -30,6 +30,8 @@ internal sealed class ItemSpriteManager
     private readonly ConditionalWeakTable<Item, ItemSpriteIndexHolder> watchedItems = [];
     internal int ParentSheetIndexUsageCount = 0;
 
+    internal readonly Dictionary<string, int>? SpecialSpritesPerIndex;
+
     internal void AddToNeedApplyDynamicSpriteIndex(Item item)
     {
         if (EnsureItemSpriteCompForQualifiedItemId(item.QualifiedItemId))
@@ -41,6 +43,9 @@ internal sealed class ItemSpriteManager
     internal ItemSpriteManager(IModHelper helper)
     {
         this.helper = helper;
+        SpecialSpritesPerIndex = this.helper.Data.ReadJsonFile<Dictionary<string, int>>(
+            "assets/special_sprite_per_index.json"
+        );
         foreach (IModInfo info in helper.ModRegistry.GetAll())
         {
             if (
@@ -90,7 +95,7 @@ internal sealed class ItemSpriteManager
     {
         string exportDir = Path.Combine(helper.DirectoryPath, "export");
         Directory.CreateDirectory(exportDir);
-        ModEntry.Log($"Export to '{exportDir}':");
+        ModEntry.Log($"Export to '{exportDir}':", LogLevel.Info);
         foreach (ItemSpriteComp itemSpriteComp in qIdToComp.Values)
         {
             itemSpriteComp.Export(exportDir);
@@ -224,7 +229,7 @@ internal sealed class ItemSpriteManager
             {
                 dataObjectInvalidated = true;
             }
-            if (name.IsEquivalentTo("Data/BigCraftables"))
+            if (name.IsEquivalentTo("Data/BigCraftables") || name.IsEquivalentTo("Data/Machines"))
             {
                 dataBigCraftablesInvalidated = true;
             }

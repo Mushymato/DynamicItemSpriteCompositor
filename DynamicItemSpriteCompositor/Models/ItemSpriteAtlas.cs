@@ -18,7 +18,7 @@ public sealed class ItemSpriteRuleAtlas
     }
 
     internal IAssetName? SourceModAsset { get; set; } = null;
-    internal int LocalMinIndex { get; set; } = 0;
-    internal int LocalMaxIndex { get; set; } = 0;
-    internal int BaseIndex { get; set; } = 0;
+    public int LocalMinIndex { get; set; } = 0;
+    public int LocalMaxIndex { get; set; } = 0;
+    public int BaseIndex { get; set; } = 0;
 }

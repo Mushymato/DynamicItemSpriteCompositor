@@ -57,7 +57,7 @@
     },
     {
       "Action": "Load",
-      "Target": "{{ModId}}/wagflours",
+      "Target": "{{ModId}}/wagflours,{{ModId}}/furnances",
       "FromFile": "assets/{{TargetWithoutPath}}.png"
     },
     {
@@ -83,31 +83,17 @@
             }
           ]
         },
-        // "Dehydrator": {
-        //   "TypeIdentifier": "(BC)",
-        //   "LocalItemId": "Dehydrator",
-        //   "SourceTexture": "{{ModId}}/machines",
-        //   "Rules": [
-        //     {
-        //       "HeldObject": {
-        //         "RequiredContextTags": "preserve_sheet_index_270",
-        //       },
-        //       "SpriteIndexList": 0
-        //     },
-        //     {
-        //       "HeldObject": {
-        //         "RequiredContextTags": "preserve_sheet_index_262",
-        //       },
-        //       "SpriteIndexList": 1
-        //     },
-        //     {
-        //       "HeldObject": {
-        //         "RequiredContextTags": "preserve_sheet_index_88",
-        //       },
-        //       "SpriteIndexList": 2
-        //     }
-        //   ]
-        // }
+        "Keggy": {
+          "TypeIdentifier": "(BC)",
+          "LocalItemId": "13",
+          "SourceTexture": "{{ModId}}/furnances",
+          "Rules": [
+            {
+              "SpriteIndexList": "0,2,4",
+              "IncludeDefaultSpriteIndex": true,
+            },
+          ]
+        }
       }
     }
   ]
