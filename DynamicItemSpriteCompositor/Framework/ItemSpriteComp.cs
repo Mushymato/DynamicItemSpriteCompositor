@@ -295,9 +295,23 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
 
     private void OverrideParsedItemDataTexture(ParsedItemData parsedItemData)
     {
-        ParsedItemData_Texture?.SetValue(parsedItemData, compTx);
-        ParsedItemData_LoadedTexture?.SetValue(parsedItemData, true);
-        ParsedItemData_DefaultSourceRect?.SetValue(parsedItemData, new Rectangle(0, 0, spriteSize.X, spriteSize.Y));
+        if (IsCompTxValid)
+        {
+            ParsedItemData_Texture?.SetValue(parsedItemData, compTx);
+            ParsedItemData_LoadedTexture?.SetValue(parsedItemData, true);
+            ParsedItemData_DefaultSourceRect?.SetValue(parsedItemData, new Rectangle(0, 0, spriteSize.X, spriteSize.Y));
+        }
+        else
+        {
+            ParsedItemData_Texture?.SetValue(parsedItemData, null);
+            ParsedItemData_LoadedTexture?.SetValue(parsedItemData, false);
+        }
+    }
+
+    internal void ForceInvalidate()
+    {
+        IsDataValid = false;
+        IsCompTxValid = false;
     }
 
     internal bool CheckInvalidate(

@@ -1,6 +1,12 @@
 {
   "$schema": "https://smapi.io/schemas/content-patcher.json",
   "Format": "2.8.0",
+  "ConfigSchema": {
+    "EnableFlours": {
+      "AllowValues": "true,false",
+      "Default": "true"
+    }
+  },
   "Changes": [
     {
       "Action": "EditData",
@@ -94,6 +100,9 @@
             },
           ]
         }
+      },
+      "When": {
+        "EnableFlours": true
       }
     }
   ]

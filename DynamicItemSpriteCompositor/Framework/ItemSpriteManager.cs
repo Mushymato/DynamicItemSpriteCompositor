@@ -17,14 +17,29 @@ internal sealed record ItemSpriteIndexHolder(Item Item)
     internal static ItemSpriteIndexHolder Make(Item item) => new(item);
 }
 
+internal sealed record ModProidedDataHolder()
+{
+    internal bool IsValid { get; set; } = false;
+    internal Dictionary<string, ItemSpriteRuleAtlas> Data
+    {
+        get => field;
+        set
+        {
+            field = value;
+            IsValid = value != null;
+        }
+    } = [];
+}
+
 internal sealed class ItemSpriteManager
 {
     private readonly IModHelper helper;
 
-    private readonly Dictionary<IAssetName, Dictionary<string, ItemSpriteRuleAtlas>?> modDataAssets = [];
+    private readonly Dictionary<IAssetName, ModProidedDataHolder> modDataAssets = [];
     private readonly Dictionary<string, ItemSpriteComp> qIdToComp = [];
 
     private readonly HashSet<string> needItemSpriteCompRecheck = [];
+    private readonly HashSet<string> needAllItemsRecheck = [];
     private readonly List<WeakReference<Item>> needApplyDynamicSpriteIndex = [];
     private readonly ConditionalWeakTable<Item, ItemSpriteIndexHolder> watchedItems = [];
     internal int ParentSheetIndexUsageCount = 0;
@@ -59,7 +74,7 @@ internal sealed class ItemSpriteManager
                 IAssetName modAssetName = helper.GameContent.ParseAssetName(
                     string.Concat(ModEntry.ModId, "/Data/", info.Manifest.UniqueID)
                 );
-                modDataAssets[modAssetName] = null;
+                modDataAssets[modAssetName] = new();
                 ModEntry.Log($"Tracking '{modAssetName}' asset for '{info.Manifest.UniqueID}'");
             }
         }
@@ -76,7 +91,8 @@ internal sealed class ItemSpriteManager
         this.helper.Events.Content.AssetRequested += OnAssetRequested;
         this.helper.Events.Content.AssetsInvalidated += OnAssetsInvalidated;
         this.helper.Events.GameLoop.UpdateTicked += OnUpdatedTicked;
-        this.helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
+        this.helper.Events.GameLoop.SaveLoaded += OnRecheckAllDynamicSpriteIndexMoment;
+        this.helper.Events.GameLoop.Saved += OnRecheckAllDynamicSpriteIndexMoment;
         this.helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
 
         helper.ConsoleCommands.Add(
@@ -148,10 +164,10 @@ internal sealed class ItemSpriteManager
         }
 
         List<ItemSpriteRuleAtlas> combinedRules = [];
-        foreach ((IAssetName assetName, Dictionary<string, ItemSpriteRuleAtlas>? ruleAtlasDict) in modDataAssets)
+        foreach ((IAssetName assetName, ModProidedDataHolder? dataHolder) in modDataAssets)
         {
             Dictionary<string, ItemSpriteRuleAtlas> currentRuleAtlas;
-            if (ruleAtlasDict == null)
+            if (!dataHolder.IsValid)
             {
                 if (!helper.GameContent.DoesAssetExist<Dictionary<string, ItemSpriteRuleAtlas>>(assetName))
                 {
@@ -159,10 +175,18 @@ internal sealed class ItemSpriteManager
                 }
                 // csharpier-ignore
                 currentRuleAtlas = helper.GameContent.Load<Dictionary<string, ItemSpriteRuleAtlas>>(assetName);
+                HashSet<string> previousQIds = dataHolder
+                    .Data.Select(kv => string.Concat(kv.Value.TypeIdentifier, kv.Value.LocalItemId))
+                    .ToHashSet();
 
                 List<string> invalidKeys = [];
                 foreach ((string key, ItemSpriteRuleAtlas spriteAtlas) in currentRuleAtlas)
                 {
+                    if (
+                        string.IsNullOrEmpty(spriteAtlas.TypeIdentifier)
+                        || string.IsNullOrWhiteSpace(spriteAtlas.LocalItemId)
+                    )
+                        continue;
                     spriteAtlas.Rules.RemoveWhere(rule => rule.SpriteIndexList.Count == 0);
                     if (spriteAtlas.Rules.Count == 0)
                     {
@@ -180,13 +204,25 @@ internal sealed class ItemSpriteManager
                         continue;
                     }
                     spriteAtlas.SourceModAsset = assetName;
+
+                    string thisQId = string.Concat(spriteAtlas.TypeIdentifier, spriteAtlas.LocalItemId);
+                    if (
+                        Context.IsWorldReady
+                        && !previousQIds.Contains(thisQId)
+                        && qIdToComp.TryGetValue(thisQId, out ItemSpriteComp? comp)
+                    )
+                    {
+                        comp.ForceInvalidate();
+                        needAllItemsRecheck.Add(thisQId);
+                    }
                 }
                 currentRuleAtlas.RemoveWhere(kv => invalidKeys.Contains(kv.Key));
-                modDataAssets[assetName] = currentRuleAtlas;
+
+                dataHolder.Data = currentRuleAtlas;
             }
             else
             {
-                currentRuleAtlas = ruleAtlasDict;
+                currentRuleAtlas = dataHolder.Data;
             }
 
             foreach (ItemSpriteRuleAtlas ruleAtlas in currentRuleAtlas.Values)
@@ -232,7 +268,7 @@ internal sealed class ItemSpriteManager
             }
             else if (modDataAssets.ContainsKey(name))
             {
-                modDataAssets[name] = null;
+                modDataAssets[name].IsValid = false;
                 reloadedModAssets.Add(name);
             }
         }
@@ -254,7 +290,18 @@ internal sealed class ItemSpriteManager
 
     private void OnUpdatedTicked(object? sender, UpdateTickedEventArgs e)
     {
-        if (needItemSpriteCompRecheck.Any())
+        if (needAllItemsRecheck.Any())
+        {
+            Utility.ForEachItem(item =>
+            {
+                if (needAllItemsRecheck.Contains(item.QualifiedItemId))
+                    ApplyDynamicSpriteIndex(item);
+                return true;
+            });
+            needItemSpriteCompRecheck.RemoveWhere(needItemSpriteCompRecheck.Contains);
+            needAllItemsRecheck.Clear();
+        }
+        else if (needItemSpriteCompRecheck.Any())
         {
             foreach (string key in needItemSpriteCompRecheck)
             {
@@ -288,7 +335,7 @@ internal sealed class ItemSpriteManager
         }
     }
 
-    private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
+    private void OnRecheckAllDynamicSpriteIndexMoment(object? sender, EventArgs e)
     {
         Utility.ForEachItem(item =>
         {
