@@ -21,7 +21,14 @@ internal static class Patches
             // TODO check mac inlining ugh
             harmony.Patch(
                 original: AccessTools.DeclaredMethod(typeof(Item), nameof(Item.ResetParentSheetIndex)),
-                postfix: new HarmonyMethod(typeof(Patches), nameof(Item_ResetParentSheetIndex_Postfix))
+                prefix: new HarmonyMethod(typeof(Patches), nameof(Item_ResetParentSheetIndex_Prefix))
+                {
+                    priority = Priority.Last,
+                }
+            );
+            harmony.Patch(
+                original: AccessTools.PropertySetter(typeof(Item), nameof(Item.ParentSheetIndex)),
+                prefix: new HarmonyMethod(typeof(Patches), nameof(Item_set_ParentSheetIndex_Prefix))
                 {
                     priority = Priority.Last,
                 }
@@ -66,17 +73,19 @@ internal static class Patches
         }
     }
 
-    private static void Item_ResetParentSheetIndex_Postfix(Item __instance)
+    private static void Item_ResetParentSheetIndex_Prefix(Item __instance)
     {
         ModEntry.manager.AddToNeedApplyDynamicSpriteIndex(__instance);
     }
 
+    private static bool Item_set_ParentSheetIndex_Prefix(Item __instance, int value)
+    {
+        return ModEntry.manager.SetSpriteIndex(__instance, value);
+    }
+
     private static void Item_get_ParentSheetIndex_Postfix(Item __instance, ref int __result)
     {
-        if (Context.IsInDrawLoop)
-        {
-            __result = ModEntry.manager.GetSpriteIndex(__instance, __result);
-        }
+        __result = ModEntry.manager.GetSpriteIndex(__instance, __result);
     }
 
     private static void ItemMetadata_SetTypeDefinition_Postfix(ref ItemMetadata __instance)
