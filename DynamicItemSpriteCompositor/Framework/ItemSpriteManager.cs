@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using DynamicItemSpriteCompositor.Models;
 using Microsoft.Xna.Framework.Graphics;
+using Netcode;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
@@ -11,12 +12,34 @@ using StardewValley.ItemTypeDefinitions;
 
 namespace DynamicItemSpriteCompositor.Framework;
 
-internal sealed record ItemSpriteIndexHolder(Item Item)
+#pragma warning disable AvoidNetField // Avoid Netcode types when possible
+internal sealed record ItemSpriteIndexHolder(WeakReference<Item> ItemRef) : IDisposable
 {
-    internal int SpriteIndex { get; set; }
+    internal int SpriteIndexChange = 0;
+    internal int SpriteIndex = 0;
 
-    internal static ItemSpriteIndexHolder Make(Item item) => new(item);
+    internal static ItemSpriteIndexHolder Make(Item item)
+    {
+        ItemSpriteIndexHolder holder = new(new WeakReference<Item>(item));
+        item.parentSheetIndex.fieldChangeVisibleEvent += holder.OnSpriteIndexChange;
+        return holder;
+    }
+
+    ~ItemSpriteIndexHolder() => Dispose();
+
+    public void Dispose()
+    {
+        if (ItemRef.TryGetTarget(out Item? item))
+            item.parentSheetIndex.fieldChangeVisibleEvent -= OnSpriteIndexChange;
+        GC.SuppressFinalize(this);
+    }
+
+    private void OnSpriteIndexChange(NetInt field, int oldValue, int newValue)
+    {
+        SpriteIndexChange += newValue - oldValue;
+    }
 }
+#pragma warning restore AvoidNetField // Avoid Netcode types when possible
 
 internal sealed record ModProidedDataHolder()
 {
@@ -45,7 +68,7 @@ internal sealed class ItemSpriteManager
 
     internal void AddToNeedApplyDynamicSpriteIndex(Item item)
     {
-        if (TryGetItemSpriteCompForQualifiedItemId(item.QualifiedItemId, out _))
+        if (ApplyDynamicSpriteIndex(item))
         {
             needApplyDynamicSpriteIndex.Add(new(item));
         }
@@ -360,7 +383,7 @@ internal sealed class ItemSpriteManager
                     {
                         if (item.QualifiedItemId == key)
                         {
-                            ApplyDynamicSpriteIndex(item);
+                            ApplyDynamicSpriteIndex(item, resetSpriteIndexChange: false);
                         }
                     }
                 }
@@ -377,7 +400,7 @@ internal sealed class ItemSpriteManager
             {
                 if (itemRef.TryGetTarget(out Item? item))
                 {
-                    ApplyDynamicSpriteIndex(item);
+                    ApplyDynamicSpriteIndex(item, resetSpriteIndexChange: false);
                 }
             }
             needApplyDynamicSpriteIndex.Clear();
@@ -413,7 +436,7 @@ internal sealed class ItemSpriteManager
         });
     }
 
-    internal void ApplyDynamicSpriteIndex(Item item)
+    internal bool ApplyDynamicSpriteIndex(Item item, bool resetSpriteIndexChange = true)
     {
         if (TryGetItemSpriteCompForQualifiedItemId(item.QualifiedItemId, out ItemSpriteComp? itemSpriteComp))
         {
@@ -425,18 +448,22 @@ internal sealed class ItemSpriteManager
                 )
             )
             {
-                watchedItems.GetValue(item, ItemSpriteIndexHolder.Make).SpriteIndex = spriteIndex.Value;
-                return;
+                ItemSpriteIndexHolder holder = watchedItems.GetValue(item, ItemSpriteIndexHolder.Make);
+                if (resetSpriteIndexChange)
+                    holder.SpriteIndexChange = 0;
+                holder.SpriteIndex = spriteIndex.Value;
+                return true;
             }
         }
         watchedItems.Remove(item);
+        return false;
     }
 
     internal int GetSpriteIndex(Item item, int currentSpriteIndex)
     {
         if (watchedItems.TryGetValue(item, out ItemSpriteIndexHolder? holder))
         {
-            return holder.SpriteIndex;
+            return holder.SpriteIndex + holder.SpriteIndexChange;
         }
         return currentSpriteIndex;
     }

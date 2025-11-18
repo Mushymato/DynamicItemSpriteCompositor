@@ -91,11 +91,11 @@
         },
         "Furnacey": {
           "TypeIdentifier": "(BC)",
-          "LocalItemId": "13",
+          "LocalItemId": "156",
           "SourceTexture": "{{ModId}}/machines",
           "Rules": [
             {
-              "SpriteIndexList": "0,2,4",
+              "SpriteIndexList": "0,2",
               "IncludeDefaultSpriteIndex": true,
             },
           ]

@@ -28,7 +28,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
     private Point spriteSize = new(16, 16);
     private int spritePerIndex = 1;
     private IAssetName? baseTextureAsset = null;
-    private int baseSpriteIndex = 0;
+    internal int baseSpriteIndex = 0;
 
     private const string compTxPrefix = $"{ModEntry.ModId}@TX";
     private readonly Texture2D compTx = new(Game1.graphics.GraphicsDevice, 16, 16)
@@ -80,6 +80,16 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
                     }
                     CheckMachineEffectsSpritePerIndex(machineData.LoadEffects);
                     CheckMachineEffectsSpritePerIndex(machineData.WorkingEffects);
+                    if (machineData.OutputRules != null)
+                    {
+                        IEnumerable<int> incrementIndex = machineData
+                            .OutputRules.SelectMany(outputRule => outputRule.OutputItem)
+                            .Select(itemOutput => itemOutput.IncrementMachineParentSheetIndex);
+                        if (incrementIndex.Any())
+                        {
+                            this.spritePerIndex += incrementIndex.Max();
+                        }
+                    }
                 }
                 this.spriteSize = new(16, 32);
                 break;
