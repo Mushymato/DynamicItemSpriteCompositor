@@ -2,7 +2,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using DynamicItemSpriteCompositor.Models;
 using Microsoft.Xna.Framework.Graphics;
-using Netcode;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
@@ -17,12 +16,6 @@ internal sealed record ItemSpriteIndexHolder(Item Item)
     internal int SpriteIndex { get; set; }
 
     internal static ItemSpriteIndexHolder Make(Item item) => new(item);
-
-    internal void OnFieldChangeVisible_heldObject(NetRef<SObject> field, SObject oldValue, SObject newValue)
-    {
-        field.fieldChangeVisibleEvent -= OnFieldChangeVisible_heldObject;
-        ModEntry.manager.AddToNeedApplyDynamicSpriteIndex(Item);
-    }
 }
 
 internal sealed record ModProidedDataHolder()
@@ -52,7 +45,7 @@ internal sealed class ItemSpriteManager
 
     internal void AddToNeedApplyDynamicSpriteIndex(Item item)
     {
-        if (EnsureItemSpriteCompForQualifiedItemId(item.QualifiedItemId))
+        if (TryGetItemSpriteCompForQualifiedItemId(item.QualifiedItemId, out _))
         {
             needApplyDynamicSpriteIndex.Add(new(item));
         }
@@ -208,6 +201,36 @@ internal sealed class ItemSpriteManager
                         invalidKeys.Add(key);
                         continue;
                     }
+                    if (spriteAtlas.SourceSpritePerIndex is int srcSpritePerIdx)
+                    {
+                        if (srcSpritePerIdx < 1)
+                        {
+                            ModEntry.Log(
+                                $"Atlas '{key}' has negative SourceSpritePerIndex={srcSpritePerIdx}.",
+                                LogLevel.Warn
+                            );
+                            invalidKeys.Add(key);
+                            continue;
+                        }
+                        List<int> allIndexes = [];
+                        foreach (var rule in spriteAtlas.Rules)
+                        {
+                            allIndexes.AddRange(rule.SpriteIndexList);
+                        }
+                        allIndexes.Sort();
+                        for (int i = 1; i < allIndexes.Count; i++)
+                        {
+                            if (allIndexes[i] - allIndexes[i - 1] < srcSpritePerIdx)
+                            {
+                                ModEntry.Log(
+                                    $"Atlas '{key}' has SourceSpritePerIndex={srcSpritePerIdx} but contains index {allIndexes[i - 1]} and {allIndexes[i]} with less difference.",
+                                    LogLevel.Warn
+                                );
+                                invalidKeys.Add(key);
+                                continue;
+                            }
+                        }
+                    }
                     if (string.IsNullOrEmpty(spriteAtlas.SourceTexture))
                     {
                         ModEntry.Log(
@@ -285,7 +308,7 @@ internal sealed class ItemSpriteManager
     private static void AddSpritesPerIndex(IDictionary<string, BigCraftableData> bcData, string id, string num)
     {
         bcData[id].CustomFields ??= [];
-        bcData[id].CustomFields[ItemSpriteComp.CustomFields_SpritesPerIndex] = num;
+        bcData[id].CustomFields[ItemSpriteComp.CustomFields_SpritePerIndex] = num;
     }
 
     private void OnAssetsInvalidated(object? sender, AssetsInvalidatedEventArgs e)
@@ -402,30 +425,20 @@ internal sealed class ItemSpriteManager
                 )
             )
             {
-                ItemSpriteIndexHolder holder = watchedItems.GetValue(item, ItemSpriteIndexHolder.Make);
-                holder.SpriteIndex = spriteIndex.Value;
-                if (item is SObject obj && validForResult.HasFlag(ValidForResult.HeldObj))
-                {
-                    obj.heldObject.fieldChangeVisibleEvent += holder.OnFieldChangeVisible_heldObject;
-                }
+                watchedItems.GetValue(item, ItemSpriteIndexHolder.Make).SpriteIndex = spriteIndex.Value;
                 return;
             }
         }
         watchedItems.Remove(item);
     }
 
-    internal int? GetSpriteIndex(Item item)
+    internal int GetSpriteIndex(Item item, int currentSpriteIndex)
     {
         if (watchedItems.TryGetValue(item, out ItemSpriteIndexHolder? holder))
         {
             return holder.SpriteIndex;
         }
-        return null;
-    }
-
-    private bool EnsureItemSpriteCompForQualifiedItemId(string qualifiedItemId)
-    {
-        return TryGetItemSpriteCompForQualifiedItemId(qualifiedItemId, out _);
+        return currentSpriteIndex;
     }
 
     internal void FixAdditionalMetadata(ItemMetadata metadata)

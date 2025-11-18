@@ -73,7 +73,10 @@ internal static class Patches
 
     private static void Item_get_ParentSheetIndex_Postfix(Item __instance, ref int __result)
     {
-        __result = ModEntry.manager.GetSpriteIndex(__instance) ?? __result;
+        if (Context.IsInDrawLoop)
+        {
+            __result = ModEntry.manager.GetSpriteIndex(__instance, __result);
+        }
     }
 
     private static void ItemMetadata_SetTypeDefinition_Postfix(ref ItemMetadata __instance)

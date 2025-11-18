@@ -19,7 +19,7 @@ internal record struct RuleValidFor(SpriteIndexRule Rule, ValidForResult ValidFo
 
 public sealed class ItemSpriteComp(IGameContentHelper content)
 {
-    internal const string CustomFields_SpritesPerIndex = $"{ModEntry.ModId}/SpritesPerIndex";
+    internal const string CustomFields_SpritePerIndex = $"{ModEntry.ModId}/SpritePerIndex";
     private const int MAX_WIDTH = 4096;
     private ItemMetadata? metadata = null;
     private IReadOnlyList<ItemSpriteRuleAtlas>? spriteRuleAtlasList = null;
@@ -56,7 +56,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
                 {
                     this.baseSpriteIndex = bcData.SpriteIndex;
                     if (
-                        (bcData.CustomFields?.TryGetValue(CustomFields_SpritesPerIndex, out string? spiStr) ?? false)
+                        (bcData.CustomFields?.TryGetValue(CustomFields_SpritePerIndex, out string? spiStr) ?? false)
                         && int.TryParse(spiStr, out int spi)
                     )
                     {
@@ -80,19 +80,6 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
                     }
                     CheckMachineEffectsSpritePerIndex(machineData.LoadEffects);
                     CheckMachineEffectsSpritePerIndex(machineData.WorkingEffects);
-                    if (machineData.OutputRules != null)
-                    {
-                        foreach (MachineOutputRule outputRule in machineData.OutputRules)
-                        {
-                            if (outputRule.OutputItem != null)
-                            {
-                                foreach (MachineItemOutput itemOutput in outputRule.OutputItem)
-                                {
-                                    this.spritePerIndex += itemOutput.IncrementMachineParentSheetIndex;
-                                }
-                            }
-                        }
-                    }
                 }
                 this.spriteSize = new(16, 32);
                 break;
@@ -101,10 +88,8 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
                 {
                     this.baseSpriteIndex = objectData.SpriteIndex;
                     if (
-                        (
-                            objectData.CustomFields?.TryGetValue(CustomFields_SpritesPerIndex, out string? spiStr)
-                            ?? false
-                        ) && int.TryParse(spiStr, out int spi)
+                        (objectData.CustomFields?.TryGetValue(CustomFields_SpritePerIndex, out string? spiStr) ?? false)
+                        && int.TryParse(spiStr, out int spi)
                     )
                     {
                         this.spritePerIndex = spi;
@@ -134,7 +119,6 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             Dictionary<int, int> remappedIdx = [];
             foreach (SpriteIndexRule spriteIndexRule in spriteAtlas.Rules)
             {
-                spriteIndexRule.SpriteIndexList.Sort();
                 foreach (int idx in spriteIndexRule.SpriteIndexList)
                 {
                     remappedIdx[idx] = idx;
@@ -144,12 +128,9 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             actualIdxKeys.Sort();
             // first pass: put in the padding idx
             int paddedIdx = spritePerIndex - (spriteAtlas.SourceSpritePerIndex ?? spritePerIndex);
-            if (paddedIdx > 0)
+            for (int i = 0; i < actualIdxKeys.Count; i++)
             {
-                for (int i = 0; i < actualIdxKeys.Count; i++)
-                {
-                    remappedIdx[actualIdxKeys[i]] += paddedIdx * i;
-                }
+                remappedIdx[actualIdxKeys[i]] += paddedIdx * i;
             }
             int baseIdx = maxIdx - remappedIdx.Values.Min();
             // second pass: put in the baseIdx

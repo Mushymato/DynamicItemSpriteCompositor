@@ -14,6 +14,21 @@
         "Juicey": {
           "TypeIdentifier": "(O)",
           "LocalItemId": "350",
+          "SourceTexture": "{{ModId}}/jars",
+          "Rules": [
+            {
+              "RequiredColor": "255 128 0",
+              "SpriteIndexList": 0
+            },
+            {
+              "RequiredColor": "255 230 0",
+              "SpriteIndexList": 2
+            }
+          ]
+        },
+        "JuiceyNoClr": {
+          "TypeIdentifier": "(O)",
+          "LocalItemId": "350",
           "SourceSpritePerIndex": 1,
           "SourceTexture": "{{ModId}}/jars_noclr",
           "Rules": [
@@ -28,25 +43,6 @@
             {
               "RequiredColor": "10 143 0",
               "SpriteIndexList": 2
-            }
-          ]
-        },
-        "Juicey2": {
-          "TypeIdentifier": "(O)",
-          "LocalItemId": "350",
-          "SourceTexture": "{{ModId}}/jars",
-          "Rules": [
-            {
-              "RequiredColor": "255 128 0",
-              "SpriteIndexList": 0
-            },
-            {
-              "RequiredColor": "255 230 0",
-              "SpriteIndexList": 2
-            },
-            {
-              "RequiredColor": "10 143 0",
-              "SpriteIndexList": 4
             }
           ]
         },

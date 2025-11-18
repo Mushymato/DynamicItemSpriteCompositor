@@ -102,13 +102,27 @@
         },
         "PerThing": {
           "TypeIdentifier": "(BC)",
-          "LocalItemId": "13",
+          "LocalItemId": "Dehydrator",
           "SourceTexture": "{{ModId}}/machines",
           "Rules": [
             {
-              "SpriteIndexList": "0,2,4",
-              "IncludeDefaultSpriteIndex": true,
+              "HeldObject": {
+                "RequiredContextTags": "preserve_sheet_index_270",
+              },
+              "SpriteIndexList": 6
             },
+            {
+              "HeldObject": {
+                "RequiredContextTags": "preserve_sheet_index_262",
+              },
+              "SpriteIndexList": 7
+            },
+            {
+              "HeldObject": {
+                "RequiredContextTags": "preserve_sheet_index_88",
+              },
+              "SpriteIndexList": 8
+            }
           ]
         }
       },

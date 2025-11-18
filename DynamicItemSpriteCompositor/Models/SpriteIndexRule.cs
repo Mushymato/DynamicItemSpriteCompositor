@@ -93,6 +93,7 @@ public sealed class SpriteIndexRule : SpriteIndexRequirements
         }
         ValidForResult result = ValidForResult.Item;
 
+        SObject? preserveObj = null;
         if (HeldObject != null)
         {
             if (item is not SObject obj || obj.heldObject.Value is not SObject heldObj)
@@ -104,11 +105,15 @@ public sealed class SpriteIndexRule : SpriteIndexRequirements
                 return ValidForResult.None;
             }
             result |= ValidForResult.HeldObj;
+            preserveObj = obj;
         }
 
         if (Preserve != null)
         {
-            if (item is not SObject obj || obj.preservedParentSheetIndex.Value is not string preserveQId)
+            if (
+                (preserveObj ?? item) is not SObject obj
+                || obj.preservedParentSheetIndex.Value is not string preserveQId
+            )
             {
                 return ValidForResult.None;
             }

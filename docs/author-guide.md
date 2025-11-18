@@ -39,6 +39,7 @@ Since the asset name is already your mod id, there's no real need to make the ke
 | `TypeIdentifier` | string | `"(O)"` | This is the type identifier part of a qualified item id (e.g. `(O)0`). Currently, only `(O)` and `(BC)` are supported. |
 | `LocalItemId` | string | `"0"` | This is the item id part of a qualified item id (e.g. `(O)0`). |
 | `SourceTexture` | string | _null_ | Source texture asset, where your sprites are on. This must be loaded. |
+| `SourceSpritePerIndex` | uint | _null_ | This is used to set your expected sprite per index for the given source texture, must be 1 or greater. See [this section](#sprite-per-index) for more details. |
 | `Rules` | List<**SpriteIndexRule**> | List of rules used to pick dynamic sprite index. |
 
 ### SpriteIndexRule
@@ -50,7 +51,7 @@ Since the asset name is already your mod id, there's no real need to make the ke
 | `RequiredCondition` | string ([Game State Query](https://stardewvalleywiki.com/Modding:Game_state_queries)) | _null_ | Game state query that the item must fulfill. Item is passed in as the `Target` item. |
 | `SpriteIndexList` | List<int> | _empty_ | List of sprite indicies on your source texture that will be assigned when this rule matches. You can use comma separated list of numbers, or just a single number. |
 | `IncludeDefaultSpriteIndex` | bool | false | If true, include the default sprite index in the list when picking. |
-| `Precedence` | int | *varies* | This adjusts whether this rule applies before other rules, lower is more prioritized. The default value depends on whether you have set other requirements. <ul><li>Base: 100</li><li>Has `RequiredContextTags`: -100</li><li>Has `RequiredColor`: -50</li><li>Has `RequiredCondition`: -25</li></ul> Setting any value at all overrides the default. |
+| `Precedence` | int | *varies* | This adjusts whether this rule applies before other rules, lower is more prioritized. The default value depends on whether you have set other requirements. |
 
 ## How does it pick index?
 
@@ -67,8 +68,21 @@ When an item pass all requirements on multiple **SpriteIndexRule** entries:
 - Only the **SpriteIndexRule** with lowest `Precedence` values are considered, e.g. if there were 2 0 item
 = it will get a random sprite index from the combined `SpriteIndexList` from all rules with equal chance.
 
-The sprite indexes are rechecked in 2 situations:
+The sprite indexes are force rechecked in 2 situations:
 - New day started
 - Relevant assets invalidated
 
 To debug any unexpected behavior, use console command `disco-export` to save the combined **ItemSpriteRuleAtlas** data and the special composite texture to DISCO's mod folder.
+
+## Sprite Per Index
+
+Sometimes, an item may have more than 1 sprite per index. A common example is colored objects, which can have 2 sprites per index (base and color mask). 
+
+In this case, your sprite sheet should match this format and also have 2 sprites, a base and a color mask, then use the index of the first sprite in the `SpriteIndexList`.
+If you don't care about the color mask sprite, then instead you can give a `SourceSpritePerIndex` value of 1, which will make DISCO automatically put in a transparent second sprite for you.
+When you are using `SourceSpritePerIndex`, you cannot have 2 index whose difference is less than `SourceSpritePerIndex`. Intuitively, this is checking for no overlapping among the sprites given.
+
+Regardless of whether you are using `SourceSpritePerIndex` or not, the sprite indicies you give in `SpriteIndexList` should always be relative to the sprite's position on the source texture asset.
+
+DISCO tries to determine most common cases of sprite per index, but some edge cases are hardcoded in `Data/Objects` and `Data/BigCraftables` as the custom field `mushymato.DISCO/SpritePerIndex`.
+
