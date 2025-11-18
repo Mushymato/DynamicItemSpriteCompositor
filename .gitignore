@@ -5,5 +5,5 @@
 */*/obj
 */config.json
 */manifest.json
-ContentPacks/WAGFlours/assets/wagflours.png
+ContentPacks/WAGFlours/assets/*.png
 .editorconfig

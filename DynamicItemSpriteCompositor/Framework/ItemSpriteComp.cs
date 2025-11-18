@@ -15,8 +15,11 @@ using StardewValley.ItemTypeDefinitions;
 
 namespace DynamicItemSpriteCompositor.Framework;
 
+internal record struct RuleValidFor(SpriteIndexRule Rule, ValidForResult ValidFor);
+
 public sealed class ItemSpriteComp(IGameContentHelper content)
 {
+    internal const string CustomFields_SpritesPerIndex = $"{ModEntry.ModId}/SpritesPerIndex";
     private const int MAX_WIDTH = 4096;
     private ItemMetadata? metadata = null;
     private IReadOnlyList<ItemSpriteRuleAtlas>? spriteRuleAtlasList = null;
@@ -46,17 +49,20 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         this.baseTextureAsset = content.ParseAssetName(parsedItemData.TextureName);
 
         this.spritePerIndex = 1;
-        if (ModEntry.manager.SpecialSpritesPerIndex?.TryGetValue(metadata.QualifiedItemId, out int specialSPI) ?? false)
-        {
-            spritePerIndex = specialSPI;
-        }
         switch (this.metadata.TypeIdentifier)
         {
             case "(BC)":
                 if (Game1.bigCraftableData.TryGetValue(metadata.LocalItemId, out BigCraftableData? bcData))
                 {
                     this.baseSpriteIndex = bcData.SpriteIndex;
-                    if (bcData.Name.Contains("Seasonal"))
+                    if (
+                        (bcData.CustomFields?.TryGetValue(CustomFields_SpritesPerIndex, out string? spiStr) ?? false)
+                        && int.TryParse(spiStr, out int spi)
+                    )
+                    {
+                        this.spritePerIndex = spi;
+                    }
+                    else if (bcData.Name.Contains("Seasonal"))
                     {
                         // TODO: this actually has more funny % 4 logic to it, not gonna deal with it for now
                         this.spritePerIndex = Math.Max(spritePerIndex, 4);
@@ -74,6 +80,19 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
                     }
                     CheckMachineEffectsSpritePerIndex(machineData.LoadEffects);
                     CheckMachineEffectsSpritePerIndex(machineData.WorkingEffects);
+                    if (machineData.OutputRules != null)
+                    {
+                        foreach (MachineOutputRule outputRule in machineData.OutputRules)
+                        {
+                            if (outputRule.OutputItem != null)
+                            {
+                                foreach (MachineItemOutput itemOutput in outputRule.OutputItem)
+                                {
+                                    this.spritePerIndex += itemOutput.IncrementMachineParentSheetIndex;
+                                }
+                            }
+                        }
+                    }
                 }
                 this.spriteSize = new(16, 32);
                 break;
@@ -81,7 +100,22 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
                 if (Game1.objectData.TryGetValue(metadata.LocalItemId, out ObjectData? objectData))
                 {
                     this.baseSpriteIndex = objectData.SpriteIndex;
-                    this.spritePerIndex = Math.Max(this.spritePerIndex, objectData.ColorOverlayFromNextIndex ? 2 : 1);
+                    if (
+                        (
+                            objectData.CustomFields?.TryGetValue(CustomFields_SpritesPerIndex, out string? spiStr)
+                            ?? false
+                        ) && int.TryParse(spiStr, out int spi)
+                    )
+                    {
+                        this.spritePerIndex = spi;
+                    }
+                    else
+                    {
+                        this.spritePerIndex = Math.Max(
+                            this.spritePerIndex,
+                            objectData.ColorOverlayFromNextIndex ? 2 : 1
+                        );
+                    }
                 }
                 goto default;
             default:
@@ -90,7 +124,6 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         }
 
         int maxIdx = spritePerIndex;
-        int extraIdx = spritePerIndex - 1;
         // recomp: comp tx marked invalid/did not have spriteRuleAtlasList before/got different counts
         bool needTextureRecomp =
             !IsCompTxValid
@@ -98,19 +131,38 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             || this.spriteRuleAtlasList.Count != spriteRuleAtlasList.Count;
         foreach (ItemSpriteRuleAtlas spriteAtlas in spriteRuleAtlasList)
         {
-            int localMinIdx = int.MaxValue;
-            int localMaxIdx = 0;
+            Dictionary<int, int> remappedIdx = [];
             foreach (SpriteIndexRule spriteIndexRule in spriteAtlas.Rules)
             {
-                if (spriteIndexRule.SpriteIndexList.Count == 0)
-                    continue;
-                localMinIdx = Math.Min(localMinIdx, spriteIndexRule.SpriteIndexList.Min());
-                localMaxIdx = Math.Max(localMaxIdx, spriteIndexRule.SpriteIndexList.Max());
+                spriteIndexRule.SpriteIndexList.Sort();
+                foreach (int idx in spriteIndexRule.SpriteIndexList)
+                {
+                    remappedIdx[idx] = idx;
+                }
             }
-            spriteAtlas.LocalMinIndex = localMinIdx;
-            spriteAtlas.LocalMaxIndex = localMaxIdx;
-            spriteAtlas.BaseIndex = maxIdx - localMinIdx;
-            maxIdx += localMaxIdx - localMinIdx + extraIdx + 1;
+            List<int> actualIdxKeys = remappedIdx.Keys.ToList();
+            actualIdxKeys.Sort();
+            // first pass: put in the padding idx
+            int paddedIdx = spritePerIndex - (spriteAtlas.SourceSpritePerIndex ?? spritePerIndex);
+            if (paddedIdx > 0)
+            {
+                for (int i = 0; i < actualIdxKeys.Count; i++)
+                {
+                    remappedIdx[actualIdxKeys[i]] += paddedIdx * i;
+                }
+            }
+            int baseIdx = maxIdx - remappedIdx.Values.Min();
+            // second pass: put in the baseIdx
+            foreach (SpriteIndexRule spriteIndexRule in spriteAtlas.Rules)
+            {
+                spriteIndexRule.ActualSpriteIndexList.Clear();
+                foreach (int idx in spriteIndexRule.SpriteIndexList)
+                {
+                    int finalIdx = baseIdx + remappedIdx[idx];
+                    spriteIndexRule.ActualSpriteIndexList.Add(finalIdx);
+                    maxIdx = Math.Max(maxIdx, finalIdx + spritePerIndex);
+                }
+            }
         }
         Point newTextureSize = new(
             Math.Min(maxIdx * spriteSize.X, MAX_WIDTH),
@@ -128,12 +180,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             {
                 ItemSpriteRuleAtlas oldISRA = this.spriteRuleAtlasList[i];
                 ItemSpriteRuleAtlas newISRA = spriteRuleAtlasList[i];
-                if (
-                    oldISRA.SourceTextureAsset != newISRA.SourceTextureAsset
-                    || oldISRA.BaseIndex != newISRA.BaseIndex
-                    || oldISRA.LocalMinIndex != newISRA.LocalMinIndex
-                    || oldISRA.LocalMaxIndex != newISRA.LocalMaxIndex
-                )
+                if (oldISRA.SourceTextureAsset != newISRA.SourceTextureAsset)
                 {
                     needTextureRecomp = true;
                     break;
@@ -186,6 +233,8 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             compTx.CopyFromTexture(tmpTx);
         }
         Color[] targetData = new Color[compTx.GetElementCount()];
+        Array.Fill(targetData, Color.Transparent);
+        ModEntry.LogDebug($"Comp: {compTx.Width}x{compTx.Height}");
 
         List<Texture2D> sourceTextures = [];
         sourceTextures.Add(content.Load<Texture2D>(baseTextureAsset));
@@ -219,16 +268,24 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             sourceTx = sourceTextures[txIdx];
             txIdx++;
             sourceTx.GetData(sourceData, 0, sourceTx.GetElementCount());
-            for (int i = spriteAtlas.LocalMinIndex; i < spriteAtlas.LocalMaxIndex + spritePerIndex; i++)
+            foreach (SpriteIndexRule spriteIndexRule in spriteAtlas.Rules)
             {
-                CopySourceSpriteToTarget(
-                    ref sourceData,
-                    sourceTx.Width,
-                    i,
-                    ref targetData,
-                    compTx.Width,
-                    spriteAtlas.BaseIndex + i
-                );
+                for (int i = 0; i < spriteIndexRule.SpriteIndexList.Count; i++)
+                {
+                    int sourceIdx = spriteIndexRule.SpriteIndexList[i];
+                    int targetIdx = spriteIndexRule.ActualSpriteIndexList[i];
+                    for (int j = 0; j < (spriteAtlas.SourceSpritePerIndex ?? spritePerIndex); j++)
+                    {
+                        CopySourceSpriteToTarget(
+                            ref sourceData,
+                            sourceTx.Width,
+                            sourceIdx + j,
+                            ref targetData,
+                            compTx.Width,
+                            targetIdx + j
+                        );
+                    }
+                }
             }
         }
 
@@ -249,7 +306,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         Rectangle sourceRect = GetSourceRectForIndex(sourceTxWidth, sourceIdx);
         Rectangle targetRect = GetSourceRectForIndex(targetTxWidth, targetIdx);
 
-        ModEntry.LogDebug($"Copy src[{sourceIdx}]{sourceRect} to comp{targetRect}");
+        ModEntry.LogDebug($"Copy src[{sourceIdx}]{sourceRect} to comp[{targetIdx}]{targetRect}");
 
         // r is row, aka y
         // copy the array row by row from source to target
@@ -362,8 +419,13 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         return !IsValid;
     }
 
-    internal bool TryApplySpriteIndexFromRules(Item item, [NotNullWhen(true)] out int? spriteIndex)
+    internal bool TryApplySpriteIndexFromRules(
+        Item item,
+        [NotNullWhen(true)] out int? spriteIndex,
+        out ValidForResult validForResult
+    )
     {
+        validForResult = ValidForResult.None;
         spriteIndex = null;
         if (spriteRuleAtlasList == null)
         {
@@ -375,7 +437,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         }
 
         // Dictionary<IAssetName, HashSet<int>> perModPossibleIndicies = [];
-        List<(SpriteIndexRule, IEnumerable<int>)> validRules = [];
+        List<RuleValidFor> validRules = [];
         foreach (ItemSpriteRuleAtlas spriteAtlas in this.spriteRuleAtlasList)
         {
             if (spriteAtlas.SourceModAsset == null)
@@ -384,11 +446,10 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             }
             foreach (SpriteIndexRule spriteIndexRule in spriteAtlas.Rules)
             {
-                if (spriteIndexRule.SpriteIndexList.Count > 0 && spriteIndexRule.ValidForItem(item))
+                ValidForResult result = spriteIndexRule.ValidForItem(item);
+                if (result != ValidForResult.None)
                 {
-                    validRules.Add(
-                        new(spriteIndexRule, spriteIndexRule.SpriteIndexList.Select(idx => idx + spriteAtlas.BaseIndex))
-                    );
+                    validRules.Add(new(spriteIndexRule, result));
                 }
             }
         }
@@ -398,20 +459,19 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         {
             return true;
         }
-        int minPrecedence = validRules.Min(rule => rule.Item1.Precedence);
+        int minPrecedence = validRules.Min(rule => rule.Rule.Precedence);
 
         HashSet<int> possibleIndicies = [];
         foreach (
-            (SpriteIndexRule rule, IEnumerable<int> adjustedIdx) in validRules.Where(rule =>
-                rule.Item1.Precedence == minPrecedence
-            )
+            RuleValidFor ruleValidFor in validRules.Where(ruleValidFor => ruleValidFor.Rule.Precedence == minPrecedence)
         )
         {
-            possibleIndicies.AddRange(adjustedIdx);
-            if (rule.IncludeDefaultSpriteIndex)
+            possibleIndicies.AddRange(ruleValidFor.Rule.ActualSpriteIndexList);
+            if (ruleValidFor.Rule.IncludeDefaultSpriteIndex)
             {
                 possibleIndicies.Add(0);
             }
+            validForResult |= ruleValidFor.ValidFor;
         }
         if (possibleIndicies.Count > 0)
         {

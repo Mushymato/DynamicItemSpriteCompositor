@@ -63,7 +63,7 @@
     },
     {
       "Action": "Load",
-      "Target": "{{ModId}}/wagflours,{{ModId}}/furnances",
+      "Target": "{{ModId}}/wagflours,{{ModId}}/machines",
       "FromFile": "assets/{{TargetWithoutPath}}.png"
     },
     {
@@ -89,10 +89,21 @@
             }
           ]
         },
-        "Keggy": {
+        "Furnacey": {
           "TypeIdentifier": "(BC)",
           "LocalItemId": "13",
-          "SourceTexture": "{{ModId}}/furnances",
+          "SourceTexture": "{{ModId}}/machines",
+          "Rules": [
+            {
+              "SpriteIndexList": "0,2,4",
+              "IncludeDefaultSpriteIndex": true,
+            },
+          ]
+        },
+        "PerThing": {
+          "TypeIdentifier": "(BC)",
+          "LocalItemId": "13",
+          "SourceTexture": "{{ModId}}/machines",
           "Rules": [
             {
               "SpriteIndexList": "0,2,4",

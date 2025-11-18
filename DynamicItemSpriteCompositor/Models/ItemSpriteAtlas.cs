@@ -7,7 +7,8 @@ public sealed class ItemSpriteRuleAtlas
     public string TypeIdentifier { get; set; } = "(O)";
     public string LocalItemId { get; set; } = "0";
     public string SourceTexture { get; set; } = "";
-    public List<SpriteIndexRule> Rules = [];
+    public int? SourceSpritePerIndex { get; set; } = null;
+    public List<SpriteIndexRule> Rules { get; set; } = [];
 
     internal IAssetName? SourceTextureAsset = null;
 
@@ -18,7 +19,4 @@ public sealed class ItemSpriteRuleAtlas
     }
 
     internal IAssetName? SourceModAsset { get; set; } = null;
-    public int LocalMinIndex { get; set; } = 0;
-    public int LocalMaxIndex { get; set; } = 0;
-    public int BaseIndex { get; set; } = 0;
 }

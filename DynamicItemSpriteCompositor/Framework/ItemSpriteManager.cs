@@ -2,10 +2,12 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using DynamicItemSpriteCompositor.Models;
 using Microsoft.Xna.Framework.Graphics;
+using Netcode;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
 using StardewValley.Extensions;
+using StardewValley.GameData.BigCraftables;
 using StardewValley.ItemTypeDefinitions;
 
 namespace DynamicItemSpriteCompositor.Framework;
@@ -15,6 +17,12 @@ internal sealed record ItemSpriteIndexHolder(Item Item)
     internal int SpriteIndex { get; set; }
 
     internal static ItemSpriteIndexHolder Make(Item item) => new(item);
+
+    internal void OnFieldChangeVisible_heldObject(NetRef<SObject> field, SObject oldValue, SObject newValue)
+    {
+        field.fieldChangeVisibleEvent -= OnFieldChangeVisible_heldObject;
+        ModEntry.manager.AddToNeedApplyDynamicSpriteIndex(Item);
+    }
 }
 
 internal sealed record ModProidedDataHolder()
@@ -42,8 +50,6 @@ internal sealed class ItemSpriteManager
     private readonly List<WeakReference<Item>> needApplyDynamicSpriteIndex = [];
     private readonly ConditionalWeakTable<Item, ItemSpriteIndexHolder> watchedItems = [];
 
-    internal readonly Dictionary<string, int>? SpecialSpritesPerIndex;
-
     internal void AddToNeedApplyDynamicSpriteIndex(Item item)
     {
         if (EnsureItemSpriteCompForQualifiedItemId(item.QualifiedItemId))
@@ -55,9 +61,6 @@ internal sealed class ItemSpriteManager
     internal ItemSpriteManager(IModHelper helper)
     {
         this.helper = helper;
-        SpecialSpritesPerIndex = this.helper.Data.ReadJsonFile<Dictionary<string, int>>(
-            "assets/special_sprite_per_index.json"
-        );
         foreach (IModInfo info in helper.ModRegistry.GetAll())
         {
             if (
@@ -259,6 +262,30 @@ internal sealed class ItemSpriteManager
             ModEntry.LogDebug($"Load '{e.Name}' for content pack");
             e.LoadFrom(() => new Dictionary<string, ItemSpriteRuleAtlas>(), AssetLoadPriority.Exclusive);
         }
+        else if (e.Name.IsEquivalentTo("Data/BigCraftables"))
+        {
+            e.Edit(Edit_BC_SpritesPerIndex_Defaults, AssetEditPriority.Early);
+        }
+    }
+
+    private void Edit_BC_SpritesPerIndex_Defaults(IAssetData asset)
+    {
+        IDictionary<string, BigCraftableData> bcData = asset.AsDictionary<string, BigCraftableData>().Data;
+        AddSpritesPerIndex(bcData, "130", "6"); // Chest
+        AddSpritesPerIndex(bcData, "165", "2"); // Auto-Grabber
+        AddSpritesPerIndex(bcData, "216", "3"); // Mini-Fridge
+        AddSpritesPerIndex(bcData, "232", "6"); // Stone Chest
+        AddSpritesPerIndex(bcData, "248", "6"); // Mini-Shipping Bin
+        AddSpritesPerIndex(bcData, "256", "6"); // Junimo Chest
+        AddSpritesPerIndex(bcData, "275", "3"); // Hopper
+        AddSpritesPerIndex(bcData, "BigChest", "6");
+        AddSpritesPerIndex(bcData, "BigStoneChest", "6");
+    }
+
+    private static void AddSpritesPerIndex(IDictionary<string, BigCraftableData> bcData, string id, string num)
+    {
+        bcData[id].CustomFields ??= [];
+        bcData[id].CustomFields[ItemSpriteComp.CustomFields_SpritesPerIndex] = num;
     }
 
     private void OnAssetsInvalidated(object? sender, AssetsInvalidatedEventArgs e)
@@ -367,10 +394,20 @@ internal sealed class ItemSpriteManager
     {
         if (TryGetItemSpriteCompForQualifiedItemId(item.QualifiedItemId, out ItemSpriteComp? itemSpriteComp))
         {
-            if (itemSpriteComp.TryApplySpriteIndexFromRules(item, out int? spriteIndex))
+            if (
+                itemSpriteComp.TryApplySpriteIndexFromRules(
+                    item,
+                    out int? spriteIndex,
+                    out ValidForResult validForResult
+                )
+            )
             {
-                if (spriteIndex.Value > 0)
-                    watchedItems.GetValue(item, ItemSpriteIndexHolder.Make).SpriteIndex = spriteIndex.Value;
+                ItemSpriteIndexHolder holder = watchedItems.GetValue(item, ItemSpriteIndexHolder.Make);
+                holder.SpriteIndex = spriteIndex.Value;
+                if (item is SObject obj && validForResult.HasFlag(ValidForResult.HeldObj))
+                {
+                    obj.heldObject.fieldChangeVisibleEvent += holder.OnFieldChangeVisible_heldObject;
+                }
                 return;
             }
         }

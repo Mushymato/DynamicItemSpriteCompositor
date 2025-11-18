@@ -4,7 +4,7 @@
   "Changes": [
     {
       "Action": "Load",
-      "Target": "{{ModId}}/jars, {{ModId}}/sraj, {{ModId}}/keggy",
+      "Target": "{{ModId}}/jars, {{ModId}}/jars_noclr, {{ModId}}/keggy",
       "FromFile": "assets/{{TargetWithoutPath}}.png"
     },
     {
@@ -12,6 +12,26 @@
       "Target": "mushymato.DISCO/Data/{{ModId}}",
       "Entries": {
         "Juicey": {
+          "TypeIdentifier": "(O)",
+          "LocalItemId": "350",
+          "SourceSpritePerIndex": 1,
+          "SourceTexture": "{{ModId}}/jars_noclr",
+          "Rules": [
+            {
+              "RequiredColor": "255 128 0",
+              "SpriteIndexList": 0
+            },
+            {
+              "RequiredColor": "255 230 0",
+              "SpriteIndexList": 1
+            },
+            {
+              "RequiredColor": "10 143 0",
+              "SpriteIndexList": 2
+            }
+          ]
+        },
+        "Juicey2": {
           "TypeIdentifier": "(O)",
           "LocalItemId": "350",
           "SourceTexture": "{{ModId}}/jars",
@@ -41,14 +61,6 @@
             },
           ]
         }
-      }
-    },
-    {
-      "Action": "EditImage",
-      "Target": "{{ModId}}/jars",
-      "FromFile": "assets/sraj.png",
-      "When": {
-        "HasFlag": "INVERT_JARS"
       }
     }
   ]
