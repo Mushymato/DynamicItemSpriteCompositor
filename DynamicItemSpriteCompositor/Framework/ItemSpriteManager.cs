@@ -74,14 +74,7 @@ internal sealed class ItemSpriteManager
         this.helper = helper;
         foreach (IModInfo info in helper.ModRegistry.GetAll())
         {
-            if (
-                info.Manifest.Dependencies.Any(dep => dep.UniqueID.EqualsIgnoreCase(ModEntry.ModId) && dep.IsRequired)
-                || (
-                    info.Manifest.ExtraFields.TryGetValue(ModEntry.ModId, out object? specialReq)
-                    && specialReq is bool specialReqBool
-                    && specialReqBool
-                )
-            )
+            if (info.Manifest.Dependencies.Any(dep => dep.UniqueID.EqualsIgnoreCase(ModEntry.ModId)))
             {
                 IAssetName modAssetName = helper.GameContent.ParseAssetName(
                     string.Concat(ModEntry.ModId, "/Data/", info.Manifest.UniqueID)
@@ -435,13 +428,7 @@ internal sealed class ItemSpriteManager
     {
         if (TryGetItemSpriteCompForQualifiedItemId(item.QualifiedItemId, out ItemSpriteComp? itemSpriteComp))
         {
-            if (
-                itemSpriteComp.TryApplySpriteIndexFromRules(
-                    item,
-                    out int? spriteIndex,
-                    out ValidForResult validForResult
-                )
-            )
+            if (itemSpriteComp.TryApplySpriteIndexFromRules(item, out int? spriteIndex))
             {
                 watchedItems
                     .GetValue(item, ItemSpriteIndexHolder.Make)

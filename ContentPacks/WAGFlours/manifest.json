@@ -1,5 +1,5 @@
 {
-  "Name": "DIS Test WAGFlours",
+  "Name": "WAGFlours",
   "Author": "mushymato",
   "Version": "1.0.0",
   "Description": "Fancy Flour",
@@ -13,6 +13,5 @@
       "UniqueID": "mushymato.DISCO",
       "IsRequired": false
     }
-  ],
-  "mushymato.DISCO": true
+  ]
 }

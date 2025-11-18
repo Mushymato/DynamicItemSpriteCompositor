@@ -4,25 +4,11 @@ This document describes how to make a content pack for DISCO.
 
 ## Dependencies
 
-Although DISCO packs are simply content patcher mods, they MUST have DISCO as a required dependency.
+Although DISCO content packs are simply content patcher mods, they must DISCO as a direct dependency, i.e. put `{ "UniqueID": "mushymato.DISCO" }` in the `"Dependencies"` section.
 
-The manifest should have:
-```js
-{
-  ...
-  "ContentPackFor": {
-    "UniqueID": "Pathoschild.ContentPatcher"
-  },
-  "Dependencies": [
-    {
-      "UniqueID": "mushymato.DISCO",
-      "IsRequired": true
-    }
-  ]
-}
-```
+Conversely, avoid putting DISCO as a dependency unless you intend to use it directly in the mod.
 
-This is used by DISCO to initialize the base asset instance for the content pack to edit.
+This is used by DISCO to initialize the base asset instance for the content pack to edit. If a content pack does not do this, then DISCO ignores it completely.
 
 ## Model
 
@@ -42,13 +28,21 @@ Since the asset name is already your mod id, there's no real need to make the ke
 | `SourceSpritePerIndex` | uint | _null_ | This is used to set your expected sprite per index for the given source texture, must be 1 or greater. See [this section](#sprite-per-index) for more details. |
 | `Rules` | List<**SpriteIndexRule**> | List of rules used to pick dynamic sprite index. |
 
-### SpriteIndexRule
+#### SpriteIndexReqs
 
 | Field | Type | Default | Notes |
 | ----- | ---- | ------- | ----- |
 | `RequiredContextTags` | List<string> | _null_ | List of context tags needed, item must have every tag in the list. Inverse tags that start with `!` is also allowed. You can use comma separated list of context tags. |
 | `RequiredColor` | Color | _null_ | This is used for flavored items (ColoredObject) which have a color. You can pass colors in as hex (`#123123`), RGBA (`30 60 90`), see [this page](./colortags.md) for list of vanilla colors. For non flavored items, use the color tags in `RequiredContextTags` instead. |
 | `RequiredCondition` | string ([Game State Query](https://stardewvalleywiki.com/Modding:Game_state_queries)) | _null_ | Game state query that the item must fulfill. Item is passed in as the `Target` item. |
+
+### SpriteIndexRule
+
+| Field | Type | Default | Notes |
+| ----- | ---- | ------- | ----- |
+| All fields of **SpriteIndexReqs** | ... | ... | **SpriteIndexRule** inherits all fields of **SpriteIndexReqs**. |
+| `HeldObject` | **SpriteIndexReqs** | _null_ | This is an extra set of requirements to check on the held object, most commonly machine outputs. |
+| `Preserve` | **SpriteIndexReqs** | _null_ | This is an extra set of requirements to apply on the preserve item that grants the flavor. Most flavored items are also colored objects so simply checking `RequiredColor` can be enough, but this covers edge cases such as honey. If a rule has both `HeldObject` and `Preserve`, the preserve item being checked will be the held object's preserve item instead. |
 | `SpriteIndexList` | List<int> | _empty_ | List of sprite indicies on your source texture that will be assigned when this rule matches. You can use comma separated list of numbers, or just a single number. |
 | `IncludeDefaultSpriteIndex` | bool | false | If true, include the default sprite index in the list when picking. |
 | `Precedence` | int | *varies* | This adjusts whether this rule applies before other rules, lower is more prioritized. The default value depends on whether you have set other requirements. |
@@ -64,9 +58,7 @@ This special composite texture becomes the item's new texture (shared across all
 There is a limitation here. If a particular place in question doesn't use `ParsedItemData` to get texture, then the changed texture won't propagate over. This mainly impacts mods that don't use `Item.draw` or `Item.drawInMenu` to display items.
 
 When an item pass all requirements on a single **SpriteIndexRule**, it will get a random sprite index from the `SpriteIndexList`.
-When an item pass all requirements on multiple **SpriteIndexRule** entries:
-- Only the **SpriteIndexRule** with lowest `Precedence` values are considered, e.g. if there were 2 0 item
-= it will get a random sprite index from the combined `SpriteIndexList` from all rules with equal chance.
+When an item pass all requirements on multiple **SpriteIndexRule** entries, only the **SpriteIndexRule** with lowest `Precedence` out of the matching rules are considered. The sprite index is picked with equal chance from all matching rules combined.
 
 The sprite indexes are force rechecked in 2 situations:
 - New day started
@@ -84,5 +76,5 @@ When you are using `SourceSpritePerIndex`, you cannot have 2 index whose differe
 
 Regardless of whether you are using `SourceSpritePerIndex` or not, the sprite indicies you give in `SpriteIndexList` should always be relative to the sprite's position on the source texture asset.
 
-DISCO tries to determine most common cases of sprite per index, but some edge cases are hardcoded in `Data/Objects` and `Data/BigCraftables` as the custom field `mushymato.DISCO/SpritePerIndex`.
+DISCO tries to determine most common cases of sprite per index. Most hardcoded cases are added to `Data/Objects`/`Data/BigCraftables` as the custom field `"mushymato.DISCO/SpritePerIndex"`. You may edit this field yourself as needed, but for vanilla objects it's best to make a report.
 

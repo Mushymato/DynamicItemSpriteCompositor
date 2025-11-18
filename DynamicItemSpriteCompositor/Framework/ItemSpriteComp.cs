@@ -15,8 +15,6 @@ using StardewValley.ItemTypeDefinitions;
 
 namespace DynamicItemSpriteCompositor.Framework;
 
-internal record struct RuleValidFor(SpriteIndexRule Rule, ValidForResult ValidFor);
-
 public sealed class ItemSpriteComp(IGameContentHelper content)
 {
     internal const string CustomFields_SpritePerIndex = $"{ModEntry.ModId}/SpritePerIndex";
@@ -410,13 +408,8 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         return !IsValid;
     }
 
-    internal bool TryApplySpriteIndexFromRules(
-        Item item,
-        [NotNullWhen(true)] out int? spriteIndex,
-        out ValidForResult validForResult
-    )
+    internal bool TryApplySpriteIndexFromRules(Item item, [NotNullWhen(true)] out int? spriteIndex)
     {
-        validForResult = ValidForResult.None;
         spriteIndex = null;
         if (spriteRuleAtlasList == null)
         {
@@ -428,7 +421,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         }
 
         // Dictionary<IAssetName, HashSet<int>> perModPossibleIndicies = [];
-        List<RuleValidFor> validRules = [];
+        List<SpriteIndexRule> validRules = [];
         foreach (ItemSpriteRuleAtlas spriteAtlas in this.spriteRuleAtlasList)
         {
             if (spriteAtlas.SourceModAsset == null)
@@ -437,10 +430,9 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             }
             foreach (SpriteIndexRule spriteIndexRule in spriteAtlas.Rules)
             {
-                ValidForResult result = spriteIndexRule.ValidForItem(item);
-                if (result != ValidForResult.None)
+                if (spriteIndexRule.ValidForItem(item))
                 {
-                    validRules.Add(new(spriteIndexRule, result));
+                    validRules.Add(spriteIndexRule);
                 }
             }
         }
@@ -450,19 +442,16 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         {
             return true;
         }
-        int minPrecedence = validRules.Min(rule => rule.Rule.Precedence);
+        int minPrecedence = validRules.Min(rule => rule.Precedence);
 
         HashSet<int> possibleIndicies = [];
-        foreach (
-            RuleValidFor ruleValidFor in validRules.Where(ruleValidFor => ruleValidFor.Rule.Precedence == minPrecedence)
-        )
+        foreach (SpriteIndexRule rule in validRules.Where(ruleValidFor => ruleValidFor.Precedence == minPrecedence))
         {
-            possibleIndicies.AddRange(ruleValidFor.Rule.ActualSpriteIndexList);
-            if (ruleValidFor.Rule.IncludeDefaultSpriteIndex)
+            possibleIndicies.AddRange(rule.ActualSpriteIndexList);
+            if (rule.IncludeDefaultSpriteIndex)
             {
                 possibleIndicies.Add(0);
             }
-            validForResult |= ruleValidFor.ValidFor;
         }
         if (possibleIndicies.Count > 0)
         {
