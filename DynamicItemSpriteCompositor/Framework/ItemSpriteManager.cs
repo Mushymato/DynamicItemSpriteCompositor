@@ -39,10 +39,8 @@ internal sealed class ItemSpriteManager
     private readonly Dictionary<string, ItemSpriteComp> qIdToComp = [];
 
     private readonly HashSet<string> needItemSpriteCompRecheck = [];
-    private readonly HashSet<string> needAllItemsRecheck = [];
     private readonly List<WeakReference<Item>> needApplyDynamicSpriteIndex = [];
     private readonly ConditionalWeakTable<Item, ItemSpriteIndexHolder> watchedItems = [];
-    internal int ParentSheetIndexUsageCount = 0;
 
     internal readonly Dictionary<string, int>? SpecialSpritesPerIndex;
 
@@ -91,14 +89,19 @@ internal sealed class ItemSpriteManager
         this.helper.Events.Content.AssetRequested += OnAssetRequested;
         this.helper.Events.Content.AssetsInvalidated += OnAssetsInvalidated;
         this.helper.Events.GameLoop.UpdateTicked += OnUpdatedTicked;
-        this.helper.Events.GameLoop.SaveLoaded += OnRecheckAllDynamicSpriteIndexMoment;
-        this.helper.Events.GameLoop.Saved += OnRecheckAllDynamicSpriteIndexMoment;
+        this.helper.Events.GameLoop.DayStarted += OnRecheckAllDynamicSpriteIndexMoment;
         this.helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
 
         helper.ConsoleCommands.Add(
             "disco-export",
             "Export the current composite sprites and rule atlas info.",
             ConsoleExport
+        );
+
+        helper.ConsoleCommands.Add(
+            "disco-recheck",
+            "Recheck dynamic sprites on every item in the world.",
+            ConsoleRecheck
         );
 
         Patches.Register();
@@ -112,6 +115,14 @@ internal sealed class ItemSpriteManager
         foreach (ItemSpriteComp itemSpriteComp in qIdToComp.Values)
         {
             itemSpriteComp.Export(exportDir);
+        }
+    }
+
+    private void ConsoleRecheck(string arg1, string[] arg2)
+    {
+        if (Context.IsWorldReady)
+        {
+            RecheckAllDynamicSpriteIndex();
         }
     }
 
@@ -213,7 +224,6 @@ internal sealed class ItemSpriteManager
                     )
                     {
                         comp.ForceInvalidate();
-                        needAllItemsRecheck.Add(thisQId);
                     }
                 }
                 currentRuleAtlas.RemoveWhere(kv => invalidKeys.Contains(kv.Key));
@@ -290,18 +300,7 @@ internal sealed class ItemSpriteManager
 
     private void OnUpdatedTicked(object? sender, UpdateTickedEventArgs e)
     {
-        if (needAllItemsRecheck.Any())
-        {
-            Utility.ForEachItem(item =>
-            {
-                if (needAllItemsRecheck.Contains(item.QualifiedItemId))
-                    ApplyDynamicSpriteIndex(item);
-                return true;
-            });
-            needItemSpriteCompRecheck.RemoveWhere(needItemSpriteCompRecheck.Contains);
-            needAllItemsRecheck.Clear();
-        }
-        else if (needItemSpriteCompRecheck.Any())
+        if (needItemSpriteCompRecheck.Any())
         {
             foreach (string key in needItemSpriteCompRecheck)
             {
@@ -336,6 +335,11 @@ internal sealed class ItemSpriteManager
     }
 
     private void OnRecheckAllDynamicSpriteIndexMoment(object? sender, EventArgs e)
+    {
+        RecheckAllDynamicSpriteIndex();
+    }
+
+    private void RecheckAllDynamicSpriteIndex()
     {
         Utility.ForEachItem(item =>
         {

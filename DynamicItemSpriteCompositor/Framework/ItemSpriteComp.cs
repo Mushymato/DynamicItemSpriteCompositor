@@ -292,6 +292,10 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         typeof(ParsedItemData),
         "DefaultSourceRect"
     );
+    private static readonly FieldInfo ParsedItemData_SpriteIndex = AccessTools.DeclaredField(
+        typeof(ParsedItemData),
+        nameof(ParsedItemData.SpriteIndex)
+    );
 
     private void OverrideParsedItemDataTexture(ParsedItemData parsedItemData)
     {
@@ -300,11 +304,13 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             ParsedItemData_Texture?.SetValue(parsedItemData, compTx);
             ParsedItemData_LoadedTexture?.SetValue(parsedItemData, true);
             ParsedItemData_DefaultSourceRect?.SetValue(parsedItemData, new Rectangle(0, 0, spriteSize.X, spriteSize.Y));
+            ParsedItemData_SpriteIndex?.SetValue(parsedItemData, 0);
         }
         else
         {
             ParsedItemData_Texture?.SetValue(parsedItemData, null);
             ParsedItemData_LoadedTexture?.SetValue(parsedItemData, false);
+            ParsedItemData_SpriteIndex?.SetValue(parsedItemData, baseSpriteIndex);
         }
     }
 
@@ -369,7 +375,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         }
 
         // Dictionary<IAssetName, HashSet<int>> perModPossibleIndicies = [];
-        List<SpriteIndexRule> validRules = [];
+        List<(SpriteIndexRule, IEnumerable<int>)> validRules = [];
         foreach (ItemSpriteRuleAtlas spriteAtlas in this.spriteRuleAtlasList)
         {
             if (spriteAtlas.SourceModAsset == null)
@@ -380,7 +386,9 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             {
                 if (spriteIndexRule.SpriteIndexList.Count > 0 && spriteIndexRule.ValidForItem(item))
                 {
-                    validRules.Add(spriteIndexRule);
+                    validRules.Add(
+                        new(spriteIndexRule, spriteIndexRule.SpriteIndexList.Select(idx => idx + spriteAtlas.BaseIndex))
+                    );
                 }
             }
         }
@@ -390,12 +398,16 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         {
             return true;
         }
-        int minPrecedence = validRules.Min(rule => rule.Precedence);
+        int minPrecedence = validRules.Min(rule => rule.Item1.Precedence);
 
         HashSet<int> possibleIndicies = [];
-        foreach (SpriteIndexRule rule in validRules.Where(rule => rule.Precedence == minPrecedence))
+        foreach (
+            (SpriteIndexRule rule, IEnumerable<int> adjustedIdx) in validRules.Where(rule =>
+                rule.Item1.Precedence == minPrecedence
+            )
+        )
         {
-            possibleIndicies.AddRange(rule.SpriteIndexList);
+            possibleIndicies.AddRange(adjustedIdx);
             if (rule.IncludeDefaultSpriteIndex)
             {
                 possibleIndicies.Add(0);
