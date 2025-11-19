@@ -112,7 +112,11 @@ public sealed class ContextTagSetConverter : JsonConverter
         if (string.IsNullOrEmpty(strValue))
             return null;
         string[] parts = strValue.Split(',');
-        return parts.Length > 0 ? parts.Select(part => part.ToLowerInvariant()).ToHashSet().ToList() : null;
+        if (parts.Length <= 0)
+            return null;
+        HashSet<string> ctags = parts.Select(part => part.ToLowerInvariant().Trim()).ToHashSet();
+        ctags.Remove(string.Empty);
+        return ctags.ToList();
     }
 
     public override bool CanWrite => false;

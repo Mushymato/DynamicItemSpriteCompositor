@@ -8,7 +8,6 @@ public sealed class SourceTextureOption
     public string Id => Texture;
     public string Texture { get; set; } = "";
     public string? ConfigName { get; set; } = null;
-    public string? ConfigDesc { get; set; } = null;
 
     internal IAssetName? SourceTextureAsset = null;
 
@@ -23,6 +22,8 @@ public sealed class ItemSpriteRuleAtlas
 {
     public string TypeIdentifier { get; set; } = "(O)";
     public string LocalItemId { get; set; } = "0";
+    public string? ConfigName { get; set; } = null;
+    internal string QualifiedItemId => string.Concat(TypeIdentifier, LocalItemId);
 
     [JsonConverter(typeof(SourceTextureOptionListConverter))]
     public List<SourceTextureOption> SourceTextureList { get; set; } = [];
@@ -30,5 +31,6 @@ public sealed class ItemSpriteRuleAtlas
     public List<SpriteIndexRule> Rules { get; set; } = [];
 
     internal IAssetName? SourceModAsset { get; set; } = null;
-    internal SourceTextureOption ChosenSourceTexture => SourceTextureList[0];
+    internal int ChosenIdx { get; set; } = 0;
+    internal SourceTextureOption ChosenSourceTexture => SourceTextureList[ChosenIdx];
 }

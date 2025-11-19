@@ -1,9 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using DynamicItemSpriteCompositor.Models;
-using HarmonyLib;
-using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
@@ -13,30 +10,18 @@ using StardewValley.ItemTypeDefinitions;
 
 namespace DynamicItemSpriteCompositor.Framework;
 
-internal sealed record ModProidedDataHolder()
-{
-    internal bool IsValid { get; set; } = false;
-    internal Dictionary<string, ItemSpriteRuleAtlas> Data
-    {
-        get => field;
-        set
-        {
-            field = value;
-            IsValid = value != null;
-        }
-    } = [];
-}
-
 internal sealed class ItemSpriteManager
 {
     private readonly IModHelper helper;
 
     private readonly Dictionary<IAssetName, ModProidedDataHolder> modDataAssets = [];
-    private readonly Dictionary<string, ItemSpriteComp> qIdToComp = [];
+    internal readonly Dictionary<string, ItemSpriteComp> qIdToComp = [];
 
     private readonly HashSet<string> needItemSpriteCompRecheck = [];
     private HashSet<Item> needApplyDynamicSpriteIndex = [];
     private readonly ConditionalWeakTable<Item, ItemSpriteIndexHolder> watchedItems = [];
+
+    private readonly ModSpritePicker spritePicker;
 
     internal void AddToNeedApplyDynamicSpriteIndex(Item item)
     {
@@ -62,7 +47,7 @@ internal sealed class ItemSpriteManager
                 IAssetName modAssetName = helper.GameContent.ParseAssetName(
                     string.Concat(ModEntry.ModId, "/Data/", info.Manifest.UniqueID)
                 );
-                modDataAssets[modAssetName] = new();
+                modDataAssets[modAssetName] = new(info.Manifest);
                 ModEntry.Log($"Tracking '{modAssetName}' asset for '{info.Manifest.UniqueID}'");
             }
         }
@@ -73,6 +58,7 @@ internal sealed class ItemSpriteManager
                 $"No content packs detected, mod is disabled. All sprite indexes will be reset once a save is loaded."
             );
             this.helper.Events.GameLoop.SaveLoaded += OnSaveLoaded_ModDisabled;
+            spritePicker = null!;
             return;
         }
 
@@ -96,6 +82,8 @@ internal sealed class ItemSpriteManager
         );
 
         Patches.Register();
+
+        spritePicker = new(helper, modDataAssets, UpdateCompTxForQId);
     }
 
     private void ConsoleExport(string arg1, string[] arg2)
@@ -117,7 +105,15 @@ internal sealed class ItemSpriteManager
         }
     }
 
-    private static ItemMetadata? SafeResolveMetadata(string qualifiedItemId)
+    internal void UpdateCompTxForQId(string qualifiedItemId)
+    {
+        if (TryGetItemSpriteCompForQualifiedItemId(qualifiedItemId, out ItemSpriteComp? itemSpriteComp))
+        {
+            itemSpriteComp.UpdateCompTx();
+        }
+    }
+
+    internal static ItemMetadata? SafeResolveMetadata(string qualifiedItemId)
     {
         Patches.ItemMetadata_SetTypeDefinition_Postfix_Enabled = false;
         ItemMetadata metadata = ItemRegistry.ResolveMetadata(qualifiedItemId);
@@ -125,7 +121,7 @@ internal sealed class ItemSpriteManager
         return metadata;
     }
 
-    internal bool TryGetItemSpriteCompForQualifiedItemId(
+    private bool TryGetItemSpriteCompForQualifiedItemId(
         string qualifiedItemId,
         [NotNullWhen(true)] out ItemSpriteComp? itemSpriteComp
     )
@@ -166,104 +162,23 @@ internal sealed class ItemSpriteManager
         }
 
         List<ItemSpriteRuleAtlas> combinedRules = [];
-        foreach ((IAssetName assetName, ModProidedDataHolder? dataHolder) in modDataAssets)
+        foreach ((IAssetName assetName, ModProidedDataHolder dataHolder) in modDataAssets)
         {
-            Dictionary<string, ItemSpriteRuleAtlas> currentRuleAtlas;
-            if (!dataHolder.IsValid)
+            if (
+                !dataHolder.TryGetModRuleAtlas(
+                    helper.GameContent,
+                    assetName,
+                    out Dictionary<string, ItemSpriteRuleAtlas>? modRuleAtlas
+                )
+            )
             {
-                if (!helper.GameContent.DoesAssetExist<Dictionary<string, ItemSpriteRuleAtlas>>(assetName))
-                {
-                    continue;
-                }
-                // csharpier-ignore
-                currentRuleAtlas = helper.GameContent.Load<Dictionary<string, ItemSpriteRuleAtlas>>(assetName);
-                HashSet<string> previousQIds = dataHolder
-                    .Data.Select(kv => string.Concat(kv.Value.TypeIdentifier, kv.Value.LocalItemId))
-                    .ToHashSet();
-
-                List<string> invalidKeys = [];
-                foreach ((string key, ItemSpriteRuleAtlas spriteAtlas) in currentRuleAtlas)
-                {
-                    if (
-                        string.IsNullOrEmpty(spriteAtlas.TypeIdentifier)
-                        || string.IsNullOrWhiteSpace(spriteAtlas.LocalItemId)
-                    )
-                        continue;
-                    spriteAtlas.Rules.RemoveWhere(rule => rule.SpriteIndexList.Count == 0);
-                    if (spriteAtlas.Rules.Count == 0)
-                    {
-                        ModEntry.Log($"Atlas '{key}' from '{assetName}' has no valid rules, skipping.", LogLevel.Warn);
-                        invalidKeys.Add(key);
-                        continue;
-                    }
-                    if (spriteAtlas.SourceSpritePerIndex is int srcSpritePerIdx)
-                    {
-                        if (srcSpritePerIdx < 1)
-                        {
-                            ModEntry.Log(
-                                $"Atlas '{key}' has negative SourceSpritePerIndex={srcSpritePerIdx}.",
-                                LogLevel.Warn
-                            );
-                            invalidKeys.Add(key);
-                            continue;
-                        }
-                        List<int> allIndexes = [];
-                        foreach (var rule in spriteAtlas.Rules)
-                        {
-                            allIndexes.AddRange(rule.SpriteIndexList);
-                        }
-                        allIndexes.Sort();
-                        for (int i = 1; i < allIndexes.Count; i++)
-                        {
-                            if (allIndexes[i] - allIndexes[i - 1] < srcSpritePerIdx)
-                            {
-                                ModEntry.Log(
-                                    $"Atlas '{key}' has SourceSpritePerIndex={srcSpritePerIdx} but contains index {allIndexes[i - 1]} and {allIndexes[i]} with less difference.",
-                                    LogLevel.Warn
-                                );
-                                invalidKeys.Add(key);
-                                continue;
-                            }
-                        }
-                    }
-                    spriteAtlas.SourceTextureList.RemoveWhere(st => string.IsNullOrEmpty(st.Texture));
-                    if (!spriteAtlas.SourceTextureList.Any())
-                    {
-                        ModEntry.Log(
-                            $"Atlas '{key}' from '{assetName}' has no source textures, skipping.",
-                            LogLevel.Warn
-                        );
-                        invalidKeys.Add(key);
-                        continue;
-                    }
-                    spriteAtlas.SourceModAsset = assetName;
-
-                    string thisQId = string.Concat(spriteAtlas.TypeIdentifier, spriteAtlas.LocalItemId);
-                    if (
-                        Context.IsWorldReady
-                        && !previousQIds.Contains(thisQId)
-                        && qIdToComp.TryGetValue(thisQId, out ItemSpriteComp? comp)
-                    )
-                    {
-                        comp.ForceInvalidate();
-                    }
-                }
-                currentRuleAtlas.RemoveWhere(kv => invalidKeys.Contains(kv.Key));
-
-                dataHolder.Data = currentRuleAtlas;
-            }
-            else
-            {
-                currentRuleAtlas = dataHolder.Data;
+                continue;
             }
 
-            foreach (ItemSpriteRuleAtlas ruleAtlas in currentRuleAtlas.Values)
+            foreach (ItemSpriteRuleAtlas ruleAtlas in modRuleAtlas.Values)
             {
                 if (
-                    helper.GameContent.DoesAssetExist<Texture2D>(
-                        ruleAtlas.ChosenSourceTexture.GetAssetName(helper.GameContent)
-                    )
-                    && ruleAtlas.TypeIdentifier == itemMetadata.TypeIdentifier
+                    ruleAtlas.TypeIdentifier == itemMetadata.TypeIdentifier
                     && ruleAtlas.LocalItemId == itemMetadata.LocalItemId
                 )
                 {
