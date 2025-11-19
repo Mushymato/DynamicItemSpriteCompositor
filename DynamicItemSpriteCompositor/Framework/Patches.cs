@@ -21,7 +21,7 @@ internal static class Patches
             // TODO check mac inlining ugh
             harmony.Patch(
                 original: AccessTools.DeclaredMethod(typeof(Item), nameof(Item.ResetParentSheetIndex)),
-                prefix: new HarmonyMethod(typeof(Patches), nameof(Item_ResetParentSheetIndex_Prefix))
+                postfix: new HarmonyMethod(typeof(Patches), nameof(Item_ResetParentSheetIndex_Postfix))
                 {
                     priority = Priority.Last,
                 }
@@ -80,7 +80,7 @@ internal static class Patches
         }
     }
 
-    private static void Item_ResetParentSheetIndex_Prefix(Item __instance)
+    private static void Item_ResetParentSheetIndex_Postfix(Item __instance)
     {
         ModEntry.manager.AddToNeedApplyDynamicSpriteIndex(__instance);
     }

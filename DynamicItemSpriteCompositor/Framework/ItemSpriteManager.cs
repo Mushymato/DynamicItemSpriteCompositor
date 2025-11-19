@@ -41,7 +41,9 @@ internal sealed class ItemSpriteManager
     internal void AddToNeedApplyDynamicSpriteIndex(Item item)
     {
         if (ApplyDynamicSpriteIndex(item, resetSpriteIndex: true))
+        {
             needApplyDynamicSpriteIndex.Add(item);
+        }
     }
 
     internal void AddToNeedApplyDynamicSpriteIndexIfWatched(Item item)
@@ -77,7 +79,8 @@ internal sealed class ItemSpriteManager
         this.helper.Events.Content.AssetRequested += OnAssetRequested;
         this.helper.Events.Content.AssetsInvalidated += OnAssetsInvalidated;
         this.helper.Events.GameLoop.UpdateTicked += OnUpdatedTicked;
-        this.helper.Events.GameLoop.DayStarted += OnRecheckAllDynamicSpriteIndexMoment;
+
+        this.helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
         this.helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
 
         helper.ConsoleCommands.Add(
@@ -340,8 +343,6 @@ internal sealed class ItemSpriteManager
         }
     }
 
-    private readonly FieldInfo Item_contextTagsDirty = AccessTools.DeclaredField(typeof(Item), "_contextTagsDirty");
-
     private void OnUpdatedTicked(object? sender, UpdateTickedEventArgs e)
     {
         if (needItemSpriteCompRecheck.Any())
@@ -376,16 +377,13 @@ internal sealed class ItemSpriteManager
         }
     }
 
-    private void OnRecheckAllDynamicSpriteIndexMoment(object? sender, EventArgs e)
-    {
-        RecheckAllDynamicSpriteIndex();
-    }
+    private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e) => RecheckAllDynamicSpriteIndex(true);
 
-    private void RecheckAllDynamicSpriteIndex()
+    private void RecheckAllDynamicSpriteIndex(bool isSaveLoaded = false)
     {
         Utility.ForEachItem(item =>
         {
-            ApplyDynamicSpriteIndex(item, resetSpriteIndex: true);
+            ApplyDynamicSpriteIndex(item, isSaveLoaded: isSaveLoaded);
             return true;
         });
     }
@@ -408,6 +406,7 @@ internal sealed class ItemSpriteManager
     internal bool ApplyDynamicSpriteIndex(
         Item item,
         bool resetSpriteIndex = false,
+        bool isSaveLoaded = false,
         ItemSpriteComp? itemSpriteComp = null
     )
     {
@@ -417,7 +416,7 @@ internal sealed class ItemSpriteManager
             {
                 watchedItems
                     .GetValue(item, ItemSpriteIndexHolder.Make)
-                    .Apply(spriteIndex.Value, itemSpriteComp.baseSpriteIndex, resetSpriteIndex);
+                    .Apply(item, spriteIndex.Value, itemSpriteComp.baseSpriteIndex, resetSpriteIndex, isSaveLoaded);
                 return true;
             }
         }
@@ -429,7 +428,7 @@ internal sealed class ItemSpriteManager
     {
         if (watchedItems.TryGetValue(item, out ItemSpriteIndexHolder? holder))
         {
-            holder.Change(newSpriteIndex);
+            holder.Change(item, newSpriteIndex);
             return false;
         }
         return true;
