@@ -2,7 +2,7 @@
 
 These are colors assigned by game depending on the preserve item's context tags, though mods could potentially add more colors.
 
-You can use the values listed here the [`RequiredColor`](./author-guide.md#SpriteIndexRule) field. In cases where it is a monogame color, the exact name is listed. Both RBG and named color work fine.
+You can use the values listed here the [`RequiredColor`](./author-guide.md#SpriteIndexRule) field. In cases where it is a monogame color, the exact name is listed. Both RGB and named color work fine as value of `RequiredColor`.
 
 | Tag | Color |
 | --- | ----- |

@@ -1,6 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using DynamicItemSpriteCompositor.Models;
+using HarmonyLib;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -10,31 +12,6 @@ using StardewValley.GameData.BigCraftables;
 using StardewValley.ItemTypeDefinitions;
 
 namespace DynamicItemSpriteCompositor.Framework;
-
-internal sealed record ItemSpriteIndexHolder(WeakReference<Item> ItemRef)
-{
-    private int spriteIndexPicked = 0;
-    private int spriteIndexBase = 0;
-    private int spriteIndexChanged = 0;
-    internal int SpriteIndex => spriteIndexPicked + spriteIndexChanged - spriteIndexBase;
-
-    internal static ItemSpriteIndexHolder Make(Item item) => new(new WeakReference<Item>(item));
-
-    internal void Apply(int pickedIndex, int baseIndex, bool resetSpriteIndex)
-    {
-        if (resetSpriteIndex)
-        {
-            spriteIndexBase = baseIndex;
-            spriteIndexChanged = baseIndex;
-        }
-        spriteIndexPicked = pickedIndex;
-    }
-
-    internal void Change(int newSpriteIndex)
-    {
-        spriteIndexChanged += newSpriteIndex - SpriteIndex;
-    }
-}
 
 internal sealed record ModProidedDataHolder()
 {
@@ -58,15 +35,19 @@ internal sealed class ItemSpriteManager
     private readonly Dictionary<string, ItemSpriteComp> qIdToComp = [];
 
     private readonly HashSet<string> needItemSpriteCompRecheck = [];
-    private readonly List<WeakReference<Item>> needApplyDynamicSpriteIndex = [];
+    private HashSet<Item> needApplyDynamicSpriteIndex = [];
     private readonly ConditionalWeakTable<Item, ItemSpriteIndexHolder> watchedItems = [];
 
     internal void AddToNeedApplyDynamicSpriteIndex(Item item)
     {
         if (ApplyDynamicSpriteIndex(item, resetSpriteIndex: true))
-        {
-            needApplyDynamicSpriteIndex.Add(new(item));
-        }
+            needApplyDynamicSpriteIndex.Add(item);
+    }
+
+    internal void AddToNeedApplyDynamicSpriteIndexIfWatched(Item item)
+    {
+        if (watchedItems.TryGetValue(item, out _))
+            needApplyDynamicSpriteIndex.Add(item);
     }
 
     internal ItemSpriteManager(IModHelper helper)
@@ -359,6 +340,8 @@ internal sealed class ItemSpriteManager
         }
     }
 
+    private readonly FieldInfo Item_contextTagsDirty = AccessTools.DeclaredField(typeof(Item), "_contextTagsDirty");
+
     private void OnUpdatedTicked(object? sender, UpdateTickedEventArgs e)
     {
         if (needItemSpriteCompRecheck.Any())
@@ -371,7 +354,7 @@ internal sealed class ItemSpriteManager
                     {
                         if (item.QualifiedItemId == key)
                         {
-                            ApplyDynamicSpriteIndex(item);
+                            ApplyDynamicSpriteIndex(item, itemSpriteComp: itemSpriteComp);
                         }
                     }
                 }
@@ -384,14 +367,12 @@ internal sealed class ItemSpriteManager
         }
         else if (needApplyDynamicSpriteIndex.Any())
         {
-            foreach (WeakReference<Item> itemRef in needApplyDynamicSpriteIndex)
+            HashSet<Item> currentToApply = needApplyDynamicSpriteIndex;
+            needApplyDynamicSpriteIndex = [];
+            foreach (Item item in currentToApply)
             {
-                if (itemRef.TryGetTarget(out Item? item))
-                {
-                    ApplyDynamicSpriteIndex(item);
-                }
+                ApplyDynamicSpriteIndex(item);
             }
-            needApplyDynamicSpriteIndex.Clear();
         }
     }
 
@@ -424,9 +405,13 @@ internal sealed class ItemSpriteManager
         });
     }
 
-    internal bool ApplyDynamicSpriteIndex(Item item, bool resetSpriteIndex = false)
+    internal bool ApplyDynamicSpriteIndex(
+        Item item,
+        bool resetSpriteIndex = false,
+        ItemSpriteComp? itemSpriteComp = null
+    )
     {
-        if (TryGetItemSpriteCompForQualifiedItemId(item.QualifiedItemId, out ItemSpriteComp? itemSpriteComp))
+        if (itemSpriteComp != null || TryGetItemSpriteCompForQualifiedItemId(item.QualifiedItemId, out itemSpriteComp))
         {
             if (itemSpriteComp.TryApplySpriteIndexFromRules(item, out int? spriteIndex))
             {

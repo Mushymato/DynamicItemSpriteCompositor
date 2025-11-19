@@ -46,6 +46,18 @@
             }
           ]
         },
+        "CaskTest": {
+          "TypeIdentifier": "(O)",
+          "LocalItemId": "348",
+          "SourceSpritePerIndex": 1,
+          "SourceTexture": "{{ModId}}/jars_noclr",
+          "Rules": [
+            {
+              "RequiredContextTags": "quality_silver",
+              "SpriteIndexList": 3
+            }
+          ]
+        },
         "Keggy": {
           "TypeIdentifier": "(BC)",
           "LocalItemId": "12",

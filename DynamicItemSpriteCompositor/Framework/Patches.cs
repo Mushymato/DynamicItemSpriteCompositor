@@ -27,6 +27,13 @@ internal static class Patches
                 }
             );
             harmony.Patch(
+                original: AccessTools.DeclaredMethod(typeof(Item), nameof(Item.MarkContextTagsDirty)),
+                prefix: new HarmonyMethod(typeof(Patches), nameof(Item_MarkContextTagsDirty_Prefix))
+                {
+                    priority = Priority.Last,
+                }
+            );
+            harmony.Patch(
                 original: AccessTools.PropertySetter(typeof(Item), nameof(Item.ParentSheetIndex)),
                 prefix: new HarmonyMethod(typeof(Patches), nameof(Item_set_ParentSheetIndex_Prefix))
                 {
@@ -76,6 +83,11 @@ internal static class Patches
     private static void Item_ResetParentSheetIndex_Prefix(Item __instance)
     {
         ModEntry.manager.AddToNeedApplyDynamicSpriteIndex(__instance);
+    }
+
+    private static void Item_MarkContextTagsDirty_Prefix(Item __instance)
+    {
+        ModEntry.manager.AddToNeedApplyDynamicSpriteIndexIfWatched(__instance);
     }
 
     private static bool Item_set_ParentSheetIndex_Prefix(Item __instance, int value)
