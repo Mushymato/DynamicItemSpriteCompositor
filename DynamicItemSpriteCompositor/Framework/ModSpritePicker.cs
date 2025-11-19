@@ -20,7 +20,7 @@ internal sealed class ModSpritePicker : IClickableMenu
     private readonly Action<string> updateCompTxForQId;
 
     private ModProidedDataHolder? currentMod = null;
-    private OptionsDropDown dropDown;
+    private OptionsDropDown? dropDown = null;
 
     internal ModSpritePicker(
         IModHelper helper,
@@ -80,9 +80,9 @@ internal sealed class ModSpritePicker : IClickableMenu
         );
         base.draw(b);
         const int MARGIN = 16;
-        const int PADDING = 8;
+        // const int PADDING = 8;
         int offsetY = yPositionOnScreen + MARGIN;
-        if (currentMod != null)
+        if (dropDown != null)
         {
             dropDown.draw(b, xPositionOnScreen + MARGIN, offsetY);
             // foreach ((string key, ItemSpriteRuleAtlas ruleAtlas) in currentMod.Data)

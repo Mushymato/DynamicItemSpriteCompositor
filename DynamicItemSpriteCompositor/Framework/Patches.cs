@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewValley;
 using StardewValley.ItemTypeDefinitions;
+using StardewValley.Objects;
 
 namespace DynamicItemSpriteCompositor.Framework;
 
@@ -62,16 +63,25 @@ internal static class Patches
 
         try
         {
+            HarmonyMethod getSourceRectTranspiler = new(typeof(Patches), nameof(SObject_draw_Transpiler))
+            {
+                priority = Priority.Last,
+            };
             harmony.Patch(
                 original: AccessTools.DeclaredMethod(
                     typeof(SObject),
                     nameof(SObject.draw),
                     [typeof(SpriteBatch), typeof(int), typeof(int), typeof(float)]
                 ),
-                transpiler: new HarmonyMethod(typeof(Patches), nameof(SObject_draw_Transpiler))
-                {
-                    priority = Priority.Last,
-                }
+                transpiler: getSourceRectTranspiler
+            );
+            harmony.Patch(
+                original: AccessTools.DeclaredMethod(
+                    typeof(Furniture),
+                    nameof(Furniture.draw),
+                    [typeof(SpriteBatch), typeof(int), typeof(int), typeof(float)]
+                ),
+                transpiler: getSourceRectTranspiler
             );
         }
         catch (Exception ex)
@@ -127,6 +137,7 @@ internal static class Patches
                 typeof(Patches),
                 nameof(Fix_ParsedItemData_GetSourceRect)
             );
+            int cnt = 0;
             CodeMatcher matcher = new(instructions, generator);
             matcher
                 .End()
@@ -136,7 +147,9 @@ internal static class Patches
                     match.Opcode = OpCodes.Call;
                     match.Operand = Fix_ParsedItemData_GetSourceRect_Method;
                     match.InsertAndAdvance([new(OpCodes.Ldarg_0)]);
+                    cnt++;
                 });
+            ModEntry.LogOnce($"Replaced {cnt} ParsedItemData.GetSourceRect");
             return matcher.Instructions();
         }
         catch (Exception ex)

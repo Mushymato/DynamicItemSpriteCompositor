@@ -1,0 +1,192 @@
+{
+  "$schema": "https://smapi.io/schemas/content-patcher.json",
+  "Changes": [
+    // Load textures
+    {
+      "Action": "Load",
+      "Target": "Honey/{{ModId}}",
+      "FromFile": "Assets/{{TargetPathOnly}}.png"
+    },
+    {
+      "Action": "Load",
+      "Target": "Honey/Bow/Checkered Pattern Lid/Brown Lid/{{ModId}},Honey/Bow/Checkered Pattern Lid/Cool White Lid/{{ModId}},Honey/Bow/Checkered Pattern Lid/Navy Lid/{{ModId}},Honey/Bow/Checkered Pattern Lid/Off White Lid/{{ModId}},Honey/Bow/Checkered Pattern Lid/Orange Lid/{{ModId}},Honey/Bow/Checkered Pattern Lid/Warm_White/{{ModId}},Honey/Bow/No Pattern Lid/Brown Lid/{{ModId}},Honey/Bow/No Pattern Lid/Cool White Lid/{{ModId}},Honey/Bow/No Pattern Lid/Navy Lid/{{ModId}},Honey/Bow/No Pattern Lid/Off White Lid/{{ModId}},Honey/Bow/No Pattern Lid/Orange Lid/{{ModId}},Honey/Bow/No Pattern Lid/Warm White Lid/{{ModId}},Honey/Bow/Spot Pattern Lid/Brown Lid/{{ModId}},Honey/Bow/Spot Pattern Lid/Cool White Lid/{{ModId}},Honey/Bow/Spot Pattern Lid/Navy Lid/{{ModId}},Honey/Bow/Spot Pattern Lid/Off White Lid/{{ModId}},Honey/Bow/Spot Pattern Lid/Orange Lid/{{ModId}},Honey/Bow/Spot Pattern Lid/Warm White Lid/{{ModId}},Honey/No Bow/Checkered Patterned Lid/Brown Lid/{{ModId}},Honey/No Bow/Checkered Patterned Lid/Cool White Lid/{{ModId}},Honey/No Bow/Checkered Patterned Lid/Navy Lid/{{ModId}},Honey/No Bow/Checkered Patterned Lid/Off White Lid/{{ModId}},Honey/No Bow/Checkered Patterned Lid/Orange Lid/{{ModId}},Honey/No Bow/Checkered Patterned Lid/Warm White Lid/{{ModId}},Honey/No Bow/No Patterned Lid/Brown Lid/{{ModId}},Honey/No Bow/No Patterned Lid/Cool White Lid/{{ModId}},Honey/No Bow/No Patterned Lid/Navy Lid/{{ModId}},Honey/No Bow/No Patterned Lid/Off White Lid/{{ModId}},Honey/No Bow/No Patterned Lid/Orange Lid/{{ModId}},Honey/No Bow/No Patterned Lid/Warm White Lid/{{ModId}},Honey/No Bow/Spot Patterned Lid/Brown Lid/{{ModId}},Honey/No Bow/Spot Patterned Lid/Cool White Lid/{{ModId}},Honey/No Bow/Spot Patterned Lid/Navy Lid/{{ModId}},Honey/No Bow/Spot Patterned Lid/Off White Lid/{{ModId}},Honey/No Bow/Spot Patterned Lid/Orange Lid/{{ModId}},Honey/No Bow/Spot Patterned Lid/Warm White Lid/{{ModId}}",
+      "FromFile": "All_Assets/{{TargetPathOnly}}/Honey.png"
+    },
+    // DriedMushrooms
+    {
+      "Action": "EditData",
+      "Target": "mushymato.DISCO/Data/{{ModId}}",
+      "Entries": {
+        "Honey": {
+          "TypeIdentifier": "(O)",
+          "LocalItemId": "340",
+          "SourceTextureList": [
+            {
+              "Texture": "Honey/Bow/Checkered Pattern Lid/Brown Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/Bow/Checkered Pattern Lid/Cool White Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/Bow/Checkered Pattern Lid/Navy Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/Bow/Checkered Pattern Lid/Off White Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/Bow/Checkered Pattern Lid/Orange Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/Bow/Checkered Pattern Lid/Warm_White/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/Bow/No Pattern Lid/Brown Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/Bow/No Pattern Lid/Cool White Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/Bow/No Pattern Lid/Navy Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/Bow/No Pattern Lid/Off White Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/Bow/No Pattern Lid/Orange Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/Bow/No Pattern Lid/Warm White Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/Bow/Spot Pattern Lid/Brown Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/Bow/Spot Pattern Lid/Cool White Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/Bow/Spot Pattern Lid/Navy Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/Bow/Spot Pattern Lid/Off White Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/Bow/Spot Pattern Lid/Orange Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/Bow/Spot Pattern Lid/Warm White Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/No Bow/Checkered Patterned Lid/Brown Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/No Bow/Checkered Patterned Lid/Cool White Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/No Bow/Checkered Patterned Lid/Navy Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/No Bow/Checkered Patterned Lid/Off White Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/No Bow/Checkered Patterned Lid/Orange Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/No Bow/Checkered Patterned Lid/Warm White Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/No Bow/No Patterned Lid/Brown Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/No Bow/No Patterned Lid/Cool White Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/No Bow/No Patterned Lid/Navy Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/No Bow/No Patterned Lid/Off White Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/No Bow/No Patterned Lid/Orange Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/No Bow/No Patterned Lid/Warm White Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/No Bow/Spot Patterned Lid/Brown Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/No Bow/Spot Patterned Lid/Cool White Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/No Bow/Spot Patterned Lid/Navy Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/No Bow/Spot Patterned Lid/Off White Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/No Bow/Spot Patterned Lid/Orange Lid/{{ModId}}"
+            },
+            {
+              "Texture": "Honey/No Bow/Spot Patterned Lid/Warm White Lid/{{ModId}}"
+            },
+          ],
+          "SourceSpritePerIndex": 1,
+          "Rules": [
+            {
+              "Preserve": {
+                "RequiredContextTags": "color_blue"
+              },
+              "SpriteIndexList": 0
+            },
+            {
+              "Preserve": {
+                "RequiredContextTags": "color_purple,!season_summer"
+              },
+              "SpriteIndexList": 1
+            },
+            {
+              "Preserve": {
+                "RequiredContextTags": "color_pink"
+              },
+              "SpriteIndexList": 2
+            },
+            {
+              "Preserve": {
+                "RequiredContextTags": "color_orange"
+              },
+              "SpriteIndexList": 3
+            },
+            {
+              "Preserve": {
+                "RequiredContextTags": "color_yellow,!season_fall"
+              },
+              "SpriteIndexList": 4
+            },
+            {
+              "Preserve": {
+                "RequiredContextTags": "color_yellow,season_fall"
+              },
+              "SpriteIndexList": 5
+            },
+            {
+              "Preserve": {
+                "RequiredContextTags": "color_purple,season_summer"
+              },
+              "SpriteIndexList": 6
+            },
+            {
+              "Preserve": {
+                "RequiredContextTags": "color_red"
+              },
+              "SpriteIndexList": 7
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_-1",
+              "SpriteIndexList": 8
+            },
+          ]
+        }
+      }
+    }
+  ]
+}
