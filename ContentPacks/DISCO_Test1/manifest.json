@@ -8,14 +8,10 @@
   "ContentPackFor": {
     "UniqueID": "Pathoschild.ContentPatcher"
   },
-  "Dependencies": [
-    {
-      "UniqueID": "mushymato.DISCO",
-      "IsRequired": true
-    },
-    {
-      "UniqueID": "mushymato.DISCO.Test2",
-      "IsRequired": false
-    }
-  ]
+  // "Dependencies": [
+  //   {
+  //     "UniqueID": "mushymato.DISCO",
+  //     "IsRequired": true
+  //   }
+  // ]
 }

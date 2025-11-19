@@ -1,0 +1,84 @@
+{
+  "$schema": "https://smapi.io/schemas/content-patcher.json",
+  "Format": "2.8.0",
+  "ConfigSchema": {
+    // DriedMushrooms
+    "DriedMushrooms_BagOrJar": {
+      "AllowValues": "Bag,Jar",
+      "Default": "Jar"
+    },
+    "DriedMushrooms_Bag_Color": {
+      "AllowValues": "Dark Brown,Light Brown,Vibrant Brown",
+      "Default": "Vibrant Brown"
+    },
+    "DriedMushrooms_JarLid_Pattern": {
+      "AllowValues": "Checkered Pattern Lid,No Checkered Pattern Lid",
+      "Default": "Checkered Pattern Lid"
+    },
+    "DriedMushrooms_JarLid_Color": {
+      "AllowValues": "Brown Lid,Cool White Lid,Navy Lid,Off White Lid,Orange Lid,Warm White Lid",
+      "Default": "Off White Lid"
+    }
+  },
+  "Changes": [
+    // Load textures
+    {
+      "Action": "Load",
+      // {{ModId}}/Honey,{{ModId}}/Jelly,{{ModId}}/Juice,{{ModId}}/Pickles,{{ModId}}/Wine
+      "Target": "{{ModId}}/DriedMushrooms",
+      "FromFile": "Assets/{{TargetWithoutPath}}.png"
+    },
+    // // Edit base with config variant textures
+    // {
+    //   "Action": "EditImage",
+    //   "Target": "{{ModId}}/DriedMushrooms",
+    //   "FromFile": "All_Assets/DriedMushrooms/Bag/{{DriedMushrooms_Bag_Color}}/DriedMushrooms.png",
+    //   "When": {
+    //     "DriedMushrooms_BagOrJar": "Bag"
+    //   }
+    // },
+    // {
+    //   "Action": "EditImage",
+    //   "Target": "{{ModId}}/DriedMushrooms",
+    //   "FromFile": "All_Assets/DriedMushrooms/Jar/{{DriedMushrooms_JarLid_Pattern}}/{{DriedMushrooms_JarLid_Color}}/DriedMushrooms.png",
+    //   "When": {
+    //     "DriedMushrooms_BagOrJar": "Jar"
+    //   }
+    // },
+    // DriedMushrooms
+    {
+      "Action": "EditData",
+      "Target": "mushymato.DISCO/Data/{{ModId}}",
+      "Entries": {
+        "(O)DriedMushrooms": {
+          "TypeIdentifier": "(O)",
+          "LocalItemId": "DriedMushrooms",
+          "SourceTextureList": "{{ModId}}/DriedMushrooms",
+          "SourceSpritePerIndex": 1,
+          "Rules": [
+            {
+              "RequiredColor": "255 128 0",
+              "SpriteIndexList": 0
+            },
+            {
+              "RequiredColor": "SaddleBrown",
+              "SpriteIndexList": 1
+            },
+            {
+              "RequiredColor": "DeepPink",
+              "SpriteIndexList": 2
+            },
+            {
+              "RequiredColor": "130 73 37",
+              "SpriteIndexList": 3
+            },
+            {
+              "RequiredColor": "115 41 181",
+              "SpriteIndexList": 4
+            },
+          ]
+        }
+      }
+    }
+  ]
+}

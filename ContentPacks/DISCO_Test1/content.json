@@ -14,7 +14,7 @@
         "Juicey": {
           "TypeIdentifier": "(O)",
           "LocalItemId": "350",
-          "SourceTexture": "{{ModId}}/jars",
+          "SourceTextureList": "{{ModId}}/jars",
           "Rules": [
             {
               "RequiredColor": "255 128 0",
@@ -30,7 +30,7 @@
           "TypeIdentifier": "(O)",
           "LocalItemId": "350",
           "SourceSpritePerIndex": 1,
-          "SourceTexture": "{{ModId}}/jars_noclr",
+          "SourceTextureList": "{{ModId}}/jars_noclr",
           "Rules": [
             {
               "RequiredColor": "255 128 0",
@@ -50,7 +50,7 @@
           "TypeIdentifier": "(O)",
           "LocalItemId": "348",
           "SourceSpritePerIndex": 1,
-          "SourceTexture": "{{ModId}}/jars_noclr",
+          "SourceTextureList": "{{ModId}}/jars_noclr",
           "Rules": [
             {
               "RequiredContextTags": "quality_silver",
@@ -61,7 +61,7 @@
         "Keggy": {
           "TypeIdentifier": "(BC)",
           "LocalItemId": "12",
-          "SourceTexture": "{{ModId}}/keggy",
+          "SourceTextureList": "{{ModId}}/keggy",
           "Rules": [
             {
               "SpriteIndexList": "0,1,2",

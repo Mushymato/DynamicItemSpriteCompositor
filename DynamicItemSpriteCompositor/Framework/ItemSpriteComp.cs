@@ -169,7 +169,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             {
                 ItemSpriteRuleAtlas oldISRA = this.spriteRuleAtlasList[i];
                 ItemSpriteRuleAtlas newISRA = spriteRuleAtlasList[i];
-                if (oldISRA.SourceTextureAsset != newISRA.SourceTextureAsset)
+                if (oldISRA.ChosenSourceTexture.SourceTextureAsset != newISRA.ChosenSourceTexture.SourceTextureAsset)
                 {
                     needTextureRecomp = true;
                     break;
@@ -229,7 +229,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         sourceTextures.Add(content.Load<Texture2D>(baseTextureAsset));
         foreach (ItemSpriteRuleAtlas spriteAtlas in spriteRuleAtlasList)
         {
-            sourceTextures.Add(content.Load<Texture2D>(spriteAtlas.SourceTextureAsset!));
+            sourceTextures.Add(content.Load<Texture2D>(spriteAtlas.ChosenSourceTexture.SourceTextureAsset!));
         }
         Color[] sourceData = new Color[sourceTextures.Max(tx => tx.GetElementCount())];
         Texture2D sourceTx = sourceTextures[0];
@@ -253,7 +253,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         int txIdx = 1;
         foreach (ItemSpriteRuleAtlas spriteAtlas in spriteRuleAtlasList)
         {
-            ModEntry.LogDebug($"Atlas: {spriteAtlas.SourceTextureAsset}");
+            ModEntry.LogDebug($"Atlas: {spriteAtlas.ChosenSourceTexture.SourceTextureAsset}");
             sourceTx = sourceTextures[txIdx];
             txIdx++;
             sourceTx.GetData(sourceData, 0, sourceTx.GetElementCount());
@@ -394,7 +394,10 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             }
             foreach (ItemSpriteRuleAtlas spriteAtlas in spriteRuleAtlasList)
             {
-                if (spriteAtlas.SourceTextureAsset != null && names.Contains(spriteAtlas.SourceTextureAsset))
+                if (
+                    spriteAtlas.ChosenSourceTexture.SourceTextureAsset != null
+                    && names.Contains(spriteAtlas.ChosenSourceTexture.SourceTextureAsset)
+                )
                 {
                     IsCompTxValid = false;
                     break;

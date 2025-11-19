@@ -1,0 +1,16 @@
+{
+  "Name": "ZH's DISCO",
+  "Author": "ZoeyHoshi",
+  "Version": "1.0.0",
+  "Description": "Changes appearance of Artisan Goods from base vanilla game.",
+  "UniqueID": "ZoeyHoshi.DISCO.Vanilla",
+  "MinimumApiVersion": "4.0.0",
+  "ContentPackFor": {
+    "UniqueID": "Pathoschild.ContentPatcher"
+  },
+  "Dependencies": [
+    {
+      "UniqueID": "mushymato.DISCO"
+    }
+  ]
+}

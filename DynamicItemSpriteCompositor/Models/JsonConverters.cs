@@ -1,11 +1,12 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using StardewValley;
 
 namespace DynamicItemSpriteCompositor.Models;
 
-public class StringIntListConverter : JsonConverter
+public sealed class StringIntListConverter : JsonConverter
 {
     public override bool CanConvert(Type objectType)
     {
@@ -53,7 +54,7 @@ public class StringIntListConverter : JsonConverter
     }
 }
 
-public class StringColorConverter : JsonConverter
+public sealed class StringColorConverter : JsonConverter
 {
     public override bool CanConvert(Type objectType)
     {
@@ -83,7 +84,7 @@ public class StringColorConverter : JsonConverter
     }
 }
 
-public class ContextTagSetConverter : JsonConverter
+public sealed class ContextTagSetConverter : JsonConverter
 {
     public override bool CanConvert(Type objectType)
     {
@@ -112,6 +113,38 @@ public class ContextTagSetConverter : JsonConverter
             return null;
         string[] parts = strValue.Split(',');
         return parts.Length > 0 ? parts.Select(part => part.ToLowerInvariant()).ToHashSet().ToList() : null;
+    }
+
+    public override bool CanWrite => false;
+
+    public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public sealed class SourceTextureOptionListConverter : JsonConverter
+{
+    public override bool CanConvert(Type objectType)
+    {
+        return objectType == typeof(List<SourceTextureOption>);
+    }
+
+    public override object? ReadJson(
+        JsonReader reader,
+        Type objectType,
+        object? existingValue,
+        JsonSerializer serializer
+    )
+    {
+        JToken token = JToken.Load(reader);
+        return token.Type switch
+        {
+            JTokenType.Null => null,
+            JTokenType.Array => token.ToObject<List<SourceTextureOption>>()?.ToList(),
+            JTokenType.String => token.ToObject<string>() is string texture ? [new() { Texture = texture }] : null,
+            _ => token.ToObject<SourceTextureOption>() is SourceTextureOption opt ? [opt] : null,
+        };
     }
 
     public override bool CanWrite => false;

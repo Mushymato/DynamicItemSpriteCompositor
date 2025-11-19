@@ -226,10 +226,11 @@ internal sealed class ItemSpriteManager
                             }
                         }
                     }
-                    if (string.IsNullOrEmpty(spriteAtlas.SourceTexture))
+                    spriteAtlas.SourceTextureList.RemoveWhere(st => string.IsNullOrEmpty(st.Texture));
+                    if (!spriteAtlas.SourceTextureList.Any())
                     {
                         ModEntry.Log(
-                            $"Atlas '{key}' from '{assetName}' has no source texture, skipping.",
+                            $"Atlas '{key}' from '{assetName}' has no source textures, skipping.",
                             LogLevel.Warn
                         );
                         invalidKeys.Add(key);
@@ -259,7 +260,9 @@ internal sealed class ItemSpriteManager
             foreach (ItemSpriteRuleAtlas ruleAtlas in currentRuleAtlas.Values)
             {
                 if (
-                    helper.GameContent.DoesAssetExist<Texture2D>(ruleAtlas.GetAssetName(helper.GameContent))
+                    helper.GameContent.DoesAssetExist<Texture2D>(
+                        ruleAtlas.ChosenSourceTexture.GetAssetName(helper.GameContent)
+                    )
                     && ruleAtlas.TypeIdentifier == itemMetadata.TypeIdentifier
                     && ruleAtlas.LocalItemId == itemMetadata.LocalItemId
                 )
