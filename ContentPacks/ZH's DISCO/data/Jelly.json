@@ -1,0 +1,162 @@
+{
+  "$schema": "https://smapi.io/schemas/content-patcher.json",
+  "Changes": [
+    // Load textures
+    {
+      "Action": "Load",
+      "Target": "Jelly/Label/Checkerd Pattern Lid/Brown Lid/Green Cactus_{{ModId}},Jelly/Label/Checkerd Pattern Lid/Cool White Lid/Green Cactus_{{ModId}},Jelly/Label/Checkerd Pattern Lid/Navy Lid/Green Cactus_{{ModId}},Jelly/Label/Checkerd Pattern Lid/Off White Lid/Green Cactus_{{ModId}},Jelly/Label/Checkerd Pattern Lid/Orange Lid/Green Cactus_{{ModId}},Jelly/Label/Checkerd Pattern Lid/Warm White Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Brown Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Cool White Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Navy Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Off White Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Orange Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Warm White Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Brown Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Cool White Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Navy Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Off White Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Orange Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Warm White Lid/{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Warm White Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Brown Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Cool White Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Navy Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Off White Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Orange Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Warm White Lid/Green Cactus_{{ModId}}",
+      "FromFile": "All_Assets/{{TargetPathOnly}}/Green Cactus/Jelly.png"
+    },
+    {
+      "Action": "EditImage",
+      "Target": "Jelly/Label/Checkerd Pattern Lid/Brown Lid/Green Cactus_{{ModId}},Jelly/Label/Checkerd Pattern Lid/Cool White Lid/Green Cactus_{{ModId}},Jelly/Label/Checkerd Pattern Lid/Navy Lid/Green Cactus_{{ModId}},Jelly/Label/Checkerd Pattern Lid/Off White Lid/Green Cactus_{{ModId}},Jelly/Label/Checkerd Pattern Lid/Orange Lid/Green Cactus_{{ModId}},Jelly/Label/Checkerd Pattern Lid/Warm White Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Brown Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Cool White Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Navy Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Off White Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Orange Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Warm White Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Brown Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Cool White Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Navy Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Off White Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Orange Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Warm White Lid/{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Warm White Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Brown Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Cool White Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Navy Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Off White Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Orange Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Warm White Lid/Green Cactus_{{ModId}}",
+      "FromFile": "All_Assets/{{TargetPathOnly}}/Red Cactus/Jelly.png",
+      "When": {
+        "CactusColor": "Red"
+      }
+    },
+    /*
+    Renamed 'Red_Cactus' to 'Red Cactus' in these folder names for consistency
+    - Jelly/Label/Checkerd Pattern Lid/Brown Lid/Red_Cactus
+    - Jelly/No Label/Checkererd Pattern Lid/Brown Lid/Red_Cactus
+    - Jelly/No Label/Checkererd Pattern Lid/Cool White Lid/Red_Cactus
+    */
+    // DriedMushrooms
+    {
+      "Action": "EditData",
+      "Target": "mushymato.DISCO/Data/{{ModId}}",
+      "Entries": {
+        "Jelly": {
+          "TypeIdentifier": "(O)",
+          "LocalItemId": "344",
+          "ConfigName": "[LocalizedText Strings\\Objects:Jelly_Name]",
+          "ConfigIconSpriteIndex": 7,
+          "SourceTextures": "Jelly/Label/Checkerd Pattern Lid/Brown Lid/Green Cactus_{{ModId}},Jelly/Label/Checkerd Pattern Lid/Cool White Lid/Green Cactus_{{ModId}},Jelly/Label/Checkerd Pattern Lid/Navy Lid/Green Cactus_{{ModId}},Jelly/Label/Checkerd Pattern Lid/Off White Lid/Green Cactus_{{ModId}},Jelly/Label/Checkerd Pattern Lid/Orange Lid/Green Cactus_{{ModId}},Jelly/Label/Checkerd Pattern Lid/Warm White Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Brown Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Cool White Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Navy Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Off White Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Orange Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Warm White Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Brown Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Cool White Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Navy Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Off White Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Orange Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Warm White Lid/{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Warm White Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Brown Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Cool White Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Navy Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Off White Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Orange Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Warm White Lid/Green Cactus_{{ModId}}",
+          "SourceSpritePerIndex": 1,
+          "Rules": [
+            {
+              "RequiredColor": "Cyan",
+              "SpriteIndexList": 0
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_613",
+              "SpriteIndexList": 1
+            },
+            {
+              "Preserve": {
+                "RequiredContextTags": "season_spring"
+              },
+              "RequiredColor": "255 128 0",
+              "SpriteIndexList": 2
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_91",
+              "SpriteIndexList": 3
+            },
+            {
+              "RequiredColor": "DarkBlue",
+              "SpriteIndexList": 4
+            },
+            {
+              "RequiredColor": "46 85 183",
+              "SpriteIndexList": 5
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_90",
+              "SpriteIndexList": 6
+            },
+            {
+              "RequiredColor": "220 0 0",
+              "SpriteIndexList": 7
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_88",
+              "SpriteIndexList": 8
+            },
+            {
+              "Preserve": {
+                "RequiredContextTags": "dye_strong"
+              },
+              "RequiredColor": "220 0 0",
+              "SpriteIndexList": 9
+            },
+            {
+              "Preserve": {
+                "RequiredContextTags": "season_winter"
+              },
+              "RequiredColor": "46 85 183",
+              "SpriteIndexList": 10
+            },
+            {
+              "RequiredColor": "115 41 181",
+              "SpriteIndexList": 11
+            },
+            {
+              "Preserve": {
+                "RequiredContextTags": "dye_medium"
+              },
+              "RequiredColor": "220 0 0",
+              "SpriteIndexList": 12
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_834",
+              "SpriteIndexList": 13
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_254",
+              "SpriteIndexList": 14
+            },
+            {
+              "RequiredColor": "255 128 0",
+              "SpriteIndexList": 15
+            },
+            {
+              "RequiredColor": "255 163 186",
+              "SpriteIndexList": 16
+            },
+            {
+              "RequiredColor": "255 230 0",
+              "SpriteIndexList": 17
+            },
+            {
+              "RequiredColor": "DeepPink",
+              "SpriteIndexList": 18
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_Powdermelon",
+              "SpriteIndexList": 19
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_889",
+              "SpriteIndexList": 20
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_252",
+              "SpriteIndexList": 21
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_296",
+              "SpriteIndexList": 22
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_396",
+              "SpriteIndexList": 23
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_268",
+              "SpriteIndexList": 24
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_400",
+              "SpriteIndexList": 25
+            },
+            {
+              "RequiredColor": "DarkViolet",
+              "SpriteIndexList": 26
+            },
+          ]
+        }
+      }
+    }
+  ]
+}

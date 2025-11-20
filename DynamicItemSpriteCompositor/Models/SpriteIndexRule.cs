@@ -7,7 +7,7 @@ namespace DynamicItemSpriteCompositor.Models;
 
 public class SpriteIndexReqs
 {
-    [JsonConverter(typeof(ContextTagSetConverter))]
+    [JsonConverter(typeof(ContextTagsConverter))]
     public List<string>? RequiredContextTags { get; set; } = null;
 
     [JsonConverter(typeof(StringColorConverter))]
@@ -102,11 +102,12 @@ public sealed class SpriteIndexRule : SpriteIndexReqs
             if (
                 (preserveObj ?? item) is not SObject obj
                 || obj.preservedParentSheetIndex.Value is not string preserveQId
+                || ItemRegistry.Create(preserveQId, allowNull: true) is not Item preserveItem
             )
             {
                 return false;
             }
-            if (!CheckReqValidForItem(Preserve, ItemRegistry.Create(preserveQId)))
+            if (!CheckReqValidForItem(Preserve, preserveItem))
             {
                 return false;
             }

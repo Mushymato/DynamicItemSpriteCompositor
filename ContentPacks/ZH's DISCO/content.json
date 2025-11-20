@@ -1,10 +1,16 @@
 {
   "$schema": "https://smapi.io/schemas/content-patcher.json",
   "Format": "2.8.0",
+  "ConfigSchema": {
+    "CactusColor": {
+      "AllowValues": "Green,Red",
+      "Default": "Green"
+    }
+  },
   "Changes": [
     {
       "Action": "Include",
-      "FromFile": "data/DriedMushrooms.json,data/Honey.json"
+      "FromFile": "data/DriedMushrooms.json,data/Honey.json,data/Jelly.json"
     }
   ]
 }

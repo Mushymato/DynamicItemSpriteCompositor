@@ -199,7 +199,9 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         }
     }
 
-    private Rectangle GetSourceRectForIndex(int width, int index) =>
+    internal Rectangle GetSourceRectForIndex(int width, int index) => GetSourceRectForIndex(width, index, spriteSize);
+
+    internal static Rectangle GetSourceRectForIndex(int width, int index, Point spriteSize) =>
         new(index * spriteSize.X % width, index * spriteSize.X / width * spriteSize.Y, spriteSize.X, spriteSize.Y);
 
     internal void UpdateCompTx()
@@ -229,7 +231,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         sourceTextures.Add(content.Load<Texture2D>(baseTextureAsset));
         foreach (ItemSpriteRuleAtlas spriteAtlas in spriteRuleAtlasList)
         {
-            sourceTextures.Add(content.Load<Texture2D>(spriteAtlas.ChosenSourceTexture.SourceTextureAsset!));
+            sourceTextures.Add(content.Load<Texture2D>(spriteAtlas.ChosenSourceTexture.SourceTextureAsset));
         }
         Color[] sourceData = new Color[sourceTextures.Max(tx => tx.GetElementCount())];
         Texture2D sourceTx = sourceTextures[0];
@@ -423,7 +425,6 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             return false;
         }
 
-        // Dictionary<IAssetName, HashSet<int>> perModPossibleIndicies = [];
         List<SpriteIndexRule> validRules = [];
         foreach (ItemSpriteRuleAtlas spriteAtlas in this.spriteRuleAtlasList)
         {
@@ -445,21 +446,43 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         {
             return true;
         }
-        int minPrecedence = validRules.Min(rule => rule.Precedence);
 
-        HashSet<int> possibleIndicies = [];
-        foreach (SpriteIndexRule rule in validRules.Where(ruleValidFor => ruleValidFor.Precedence == minPrecedence))
+        int minPrecedence = int.MaxValue;
+        SpriteIndexRule? minPrecedenceRule = null;
+        foreach (SpriteIndexRule rule in validRules)
         {
-            possibleIndicies.AddRange(rule.ActualSpriteIndexList);
-            if (rule.IncludeDefaultSpriteIndex)
+            if (rule.Precedence < minPrecedence)
             {
-                possibleIndicies.Add(0);
+                minPrecedence = rule.Precedence;
+                minPrecedenceRule = rule;
             }
         }
-        if (possibleIndicies.Count > 0)
+        if (minPrecedenceRule != null)
         {
-            spriteIndex = Random.Shared.ChooseFrom(possibleIndicies.ToList());
+            int randIdx = Random.Shared.Next(
+                minPrecedenceRule.IncludeDefaultSpriteIndex ? -1 : 0,
+                minPrecedenceRule.ActualSpriteIndexList.Count
+            );
+            if (randIdx >= 0)
+            {
+                spriteIndex = minPrecedenceRule.ActualSpriteIndexList[randIdx];
+            }
         }
+
+        // int minPrecedence = validRules.Min(rule => rule.Precedence);
+        // HashSet<int> possibleIndicies = [];
+        // foreach (SpriteIndexRule rule in validRules.Where(ruleValidFor => ruleValidFor.Precedence == minPrecedence))
+        // {
+        //     possibleIndicies.AddRange(rule.ActualSpriteIndexList);
+        //     if (rule.IncludeDefaultSpriteIndex)
+        //     {
+        //         possibleIndicies.Add(0);
+        //     }
+        // }
+        // if (possibleIndicies.Count > 0)
+        // {
+        //     spriteIndex = Random.Shared.ChooseFrom(possibleIndicies.ToList());
+        // }
 
         return true;
     }

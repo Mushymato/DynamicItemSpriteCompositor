@@ -18,8 +18,8 @@ You can use the values listed here the [`RequiredColor`](./author-guide.md#Sprit
 | `color_purple` | `115 41 181` |
 | `color_brown` | `130 73 37` |
 | `color_light_cyan` | `180 255 255` |
-| `color_cyan` | `0 255 255` |
 | `color_cyan` | `Cyan` |
+| `color_aquamarine` | `Aquamarine` |
 | `color_sea_green` | `SeaGreen` |
 | `color_lime` | `Lime` |
 | `color_yellow_green` | `GreenYellow` |

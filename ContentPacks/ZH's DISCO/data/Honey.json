@@ -4,11 +4,6 @@
     // Load textures
     {
       "Action": "Load",
-      "Target": "Honey/{{ModId}}",
-      "FromFile": "Assets/{{TargetPathOnly}}.png"
-    },
-    {
-      "Action": "Load",
       "Target": "Honey/Bow/Checkered Pattern Lid/Brown Lid/{{ModId}},Honey/Bow/Checkered Pattern Lid/Cool White Lid/{{ModId}},Honey/Bow/Checkered Pattern Lid/Navy Lid/{{ModId}},Honey/Bow/Checkered Pattern Lid/Off White Lid/{{ModId}},Honey/Bow/Checkered Pattern Lid/Orange Lid/{{ModId}},Honey/Bow/Checkered Pattern Lid/Warm_White/{{ModId}},Honey/Bow/No Pattern Lid/Brown Lid/{{ModId}},Honey/Bow/No Pattern Lid/Cool White Lid/{{ModId}},Honey/Bow/No Pattern Lid/Navy Lid/{{ModId}},Honey/Bow/No Pattern Lid/Off White Lid/{{ModId}},Honey/Bow/No Pattern Lid/Orange Lid/{{ModId}},Honey/Bow/No Pattern Lid/Warm White Lid/{{ModId}},Honey/Bow/Spot Pattern Lid/Brown Lid/{{ModId}},Honey/Bow/Spot Pattern Lid/Cool White Lid/{{ModId}},Honey/Bow/Spot Pattern Lid/Navy Lid/{{ModId}},Honey/Bow/Spot Pattern Lid/Off White Lid/{{ModId}},Honey/Bow/Spot Pattern Lid/Orange Lid/{{ModId}},Honey/Bow/Spot Pattern Lid/Warm White Lid/{{ModId}},Honey/No Bow/Checkered Patterned Lid/Brown Lid/{{ModId}},Honey/No Bow/Checkered Patterned Lid/Cool White Lid/{{ModId}},Honey/No Bow/Checkered Patterned Lid/Navy Lid/{{ModId}},Honey/No Bow/Checkered Patterned Lid/Off White Lid/{{ModId}},Honey/No Bow/Checkered Patterned Lid/Orange Lid/{{ModId}},Honey/No Bow/Checkered Patterned Lid/Warm White Lid/{{ModId}},Honey/No Bow/No Patterned Lid/Brown Lid/{{ModId}},Honey/No Bow/No Patterned Lid/Cool White Lid/{{ModId}},Honey/No Bow/No Patterned Lid/Navy Lid/{{ModId}},Honey/No Bow/No Patterned Lid/Off White Lid/{{ModId}},Honey/No Bow/No Patterned Lid/Orange Lid/{{ModId}},Honey/No Bow/No Patterned Lid/Warm White Lid/{{ModId}},Honey/No Bow/Spot Patterned Lid/Brown Lid/{{ModId}},Honey/No Bow/Spot Patterned Lid/Cool White Lid/{{ModId}},Honey/No Bow/Spot Patterned Lid/Navy Lid/{{ModId}},Honey/No Bow/Spot Patterned Lid/Off White Lid/{{ModId}},Honey/No Bow/Spot Patterned Lid/Orange Lid/{{ModId}},Honey/No Bow/Spot Patterned Lid/Warm White Lid/{{ModId}}",
       "FromFile": "All_Assets/{{TargetPathOnly}}/Honey.png"
     },
@@ -20,116 +15,9 @@
         "Honey": {
           "TypeIdentifier": "(O)",
           "LocalItemId": "340",
-          "SourceTextureList": [
-            {
-              "Texture": "Honey/Bow/Checkered Pattern Lid/Brown Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/Bow/Checkered Pattern Lid/Cool White Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/Bow/Checkered Pattern Lid/Navy Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/Bow/Checkered Pattern Lid/Off White Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/Bow/Checkered Pattern Lid/Orange Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/Bow/Checkered Pattern Lid/Warm_White/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/Bow/No Pattern Lid/Brown Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/Bow/No Pattern Lid/Cool White Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/Bow/No Pattern Lid/Navy Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/Bow/No Pattern Lid/Off White Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/Bow/No Pattern Lid/Orange Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/Bow/No Pattern Lid/Warm White Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/Bow/Spot Pattern Lid/Brown Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/Bow/Spot Pattern Lid/Cool White Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/Bow/Spot Pattern Lid/Navy Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/Bow/Spot Pattern Lid/Off White Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/Bow/Spot Pattern Lid/Orange Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/Bow/Spot Pattern Lid/Warm White Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/No Bow/Checkered Patterned Lid/Brown Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/No Bow/Checkered Patterned Lid/Cool White Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/No Bow/Checkered Patterned Lid/Navy Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/No Bow/Checkered Patterned Lid/Off White Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/No Bow/Checkered Patterned Lid/Orange Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/No Bow/Checkered Patterned Lid/Warm White Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/No Bow/No Patterned Lid/Brown Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/No Bow/No Patterned Lid/Cool White Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/No Bow/No Patterned Lid/Navy Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/No Bow/No Patterned Lid/Off White Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/No Bow/No Patterned Lid/Orange Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/No Bow/No Patterned Lid/Warm White Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/No Bow/Spot Patterned Lid/Brown Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/No Bow/Spot Patterned Lid/Cool White Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/No Bow/Spot Patterned Lid/Navy Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/No Bow/Spot Patterned Lid/Off White Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/No Bow/Spot Patterned Lid/Orange Lid/{{ModId}}"
-            },
-            {
-              "Texture": "Honey/No Bow/Spot Patterned Lid/Warm White Lid/{{ModId}}"
-            },
-          ],
+          "ConfigName": "[LocalizedText Strings\\Objects:Honey_Name]",
+          "ConfigIconSpriteIndex": 8,
+          "SourceTextures": "Honey/Bow/Checkered Pattern Lid/Brown Lid/{{ModId}},Honey/Bow/Checkered Pattern Lid/Cool White Lid/{{ModId}},Honey/Bow/Checkered Pattern Lid/Navy Lid/{{ModId}},Honey/Bow/Checkered Pattern Lid/Off White Lid/{{ModId}},Honey/Bow/Checkered Pattern Lid/Orange Lid/{{ModId}},Honey/Bow/Checkered Pattern Lid/Warm_White/{{ModId}},Honey/Bow/No Pattern Lid/Brown Lid/{{ModId}},Honey/Bow/No Pattern Lid/Cool White Lid/{{ModId}},Honey/Bow/No Pattern Lid/Navy Lid/{{ModId}},Honey/Bow/No Pattern Lid/Off White Lid/{{ModId}},Honey/Bow/No Pattern Lid/Orange Lid/{{ModId}},Honey/Bow/No Pattern Lid/Warm White Lid/{{ModId}},Honey/Bow/Spot Pattern Lid/Brown Lid/{{ModId}},Honey/Bow/Spot Pattern Lid/Cool White Lid/{{ModId}},Honey/Bow/Spot Pattern Lid/Navy Lid/{{ModId}},Honey/Bow/Spot Pattern Lid/Off White Lid/{{ModId}},Honey/Bow/Spot Pattern Lid/Orange Lid/{{ModId}},Honey/Bow/Spot Pattern Lid/Warm White Lid/{{ModId}},Honey/No Bow/Checkered Patterned Lid/Brown Lid/{{ModId}},Honey/No Bow/Checkered Patterned Lid/Cool White Lid/{{ModId}},Honey/No Bow/Checkered Patterned Lid/Navy Lid/{{ModId}},Honey/No Bow/Checkered Patterned Lid/Off White Lid/{{ModId}},Honey/No Bow/Checkered Patterned Lid/Orange Lid/{{ModId}},Honey/No Bow/Checkered Patterned Lid/Warm White Lid/{{ModId}},Honey/No Bow/No Patterned Lid/Brown Lid/{{ModId}},Honey/No Bow/No Patterned Lid/Cool White Lid/{{ModId}},Honey/No Bow/No Patterned Lid/Navy Lid/{{ModId}},Honey/No Bow/No Patterned Lid/Off White Lid/{{ModId}},Honey/No Bow/No Patterned Lid/Orange Lid/{{ModId}},Honey/No Bow/No Patterned Lid/Warm White Lid/{{ModId}},Honey/No Bow/Spot Patterned Lid/Brown Lid/{{ModId}},Honey/No Bow/Spot Patterned Lid/Cool White Lid/{{ModId}},Honey/No Bow/Spot Patterned Lid/Navy Lid/{{ModId}},Honey/No Bow/Spot Patterned Lid/Off White Lid/{{ModId}},Honey/No Bow/Spot Patterned Lid/Orange Lid/{{ModId}},Honey/No Bow/Spot Patterned Lid/Warm White Lid/{{ModId}}",
           "SourceSpritePerIndex": 1,
           "Rules": [
             {

@@ -17,8 +17,24 @@ internal sealed record AtlasPickDisplayInfo(
     Texture2D Icon,
     Rectangle IconSourceRect,
     string Label,
-    ItemSpriteRuleAtlas Atlas
-) : DisplayInfo(Icon, IconSourceRect, Label);
+    int DisplayIdx,
+    ItemSpriteRuleAtlas Atlas,
+    IGameContentHelper Content
+) : DisplayInfo(Icon, IconSourceRect, Label)
+{
+    internal Texture2D? IconCurrent { get; private set; } = null!;
+    internal Rectangle IconCurrentSourceRect { get; private set; } = Rectangle.Empty;
+
+    internal void UpdateIconCurrent()
+    {
+        IconCurrent = Content.Load<Texture2D>(Atlas.ChosenSourceTexture.SourceTextureAsset);
+        IconCurrentSourceRect = ItemSpriteComp.GetSourceRectForIndex(
+            IconCurrent.ActualWidth,
+            DisplayIdx,
+            new(IconSourceRect.Width, IconSourceRect.Height)
+        );
+    }
+}
 
 internal class RelativeCC(Rectangle bounds, string name) : ClickableComponent(bounds, name)
 {
@@ -47,6 +63,8 @@ internal sealed class AtlasPickCC(Rectangle bounds, string name) : RelativeCC(bo
         }
         Color clr = Color.White * alpha;
 
+        AtlasPickDisplayInfo aDisplay = (AtlasPickDisplayInfo)display;
+
         IClickableMenu.drawTextureBox(
             b,
             Game1.menuTexture,
@@ -59,20 +77,33 @@ internal sealed class AtlasPickCC(Rectangle bounds, string name) : RelativeCC(bo
             drawShadow: false
         );
         b.Draw(
-            display.Icon,
+            aDisplay.Icon,
             new(bounds.X + ModSpritePicker.PADDING, bounds.Y + ModSpritePicker.PADDING, 64, 64),
-            display.IconSourceRect,
+            aDisplay.IconSourceRect,
             clr,
             0,
             Vector2.Zero,
             SpriteEffects.None,
             1f
         );
+        if (aDisplay.IconCurrent != null)
+        {
+            b.Draw(
+                aDisplay.IconCurrent,
+                new(bounds.X + ModSpritePicker.PADDING * 2 + 64, bounds.Y + ModSpritePicker.PADDING, 64, 64),
+                aDisplay.IconCurrentSourceRect,
+                clr,
+                0,
+                Vector2.Zero,
+                SpriteEffects.None,
+                1f
+            );
+        }
         Utility.drawTextWithShadow(
             b,
-            display.Label,
+            aDisplay.Label,
             Game1.smallFont,
-            new(bounds.X + ModSpritePicker.PADDING * 2 + 64, bounds.Y + ModSpritePicker.PADDING + 12),
+            new(bounds.X + (ModSpritePicker.PADDING * 2 + 64) * 2, bounds.Y + ModSpritePicker.PADDING + 12),
             Game1.textColor * alpha
         );
     }
@@ -119,7 +150,7 @@ internal sealed class ModSpritePicker : IClickableMenu
 
     internal const int ATLAS_ROW_CNT = 6;
     internal const int ATLAS_COL_CNT = 2;
-    internal const int TEXTURE_ROW_CNT = 5;
+    internal const int TEXTURE_ROW_CNT = 6;
     internal const int TEXTURE_COL_CNT = 10;
 
     private readonly Rectangle MenuRectBG = new(0, 256, 60, 60);
@@ -167,21 +198,21 @@ internal sealed class ModSpritePicker : IClickableMenu
 
         for (int i = 0; i < (ATLAS_COL_CNT * ATLAS_ROW_CNT); i++)
         {
-            row = i % ATLAS_COL_CNT;
-            col = i / ATLAS_COL_CNT;
+            row = i / ATLAS_COL_CNT;
+            col = i % ATLAS_COL_CNT;
             myID = 100 + i;
             // string name, Rectangle bounds, string label, string hoverText, Texture2D texture, Rectangle sourceRect, float scale, bool drawShadow = false
             AtlasPicks.Add(
                 new AtlasPickCC(new(0, 0, cellWidth, cellHeight), $"AtlasPicks_{i}")
                 {
-                    BaseX = MARGIN + (PADDING / 2 + cellWidth) * row,
-                    BaseY = MARGIN + (PADDING + cellHeight) * col,
+                    BaseX = MARGIN + (PADDING / 2 + cellWidth) * col,
+                    BaseY = MARGIN + (PADDING + cellHeight) * row,
                     myID = myID,
-                    upNeighborID = row > 0 ? myID - ATLAS_COL_CNT : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
-                    leftNeighborID = col > 0 ? myID - 1 : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
-                    rightNeighborID = col < ATLAS_COL_CNT - 1 ? myID + 1 : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
+                    upNeighborID = col > 0 ? myID - ATLAS_COL_CNT : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
+                    leftNeighborID = row > 0 ? myID - 1 : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
+                    rightNeighborID = row < ATLAS_COL_CNT - 1 ? myID + 1 : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
                     downNeighborID =
-                        row < ATLAS_ROW_CNT - 1 ? myID + ATLAS_COL_CNT : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
+                        col < ATLAS_ROW_CNT - 1 ? myID + ATLAS_COL_CNT : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
                 }
             );
         }
@@ -190,21 +221,21 @@ internal sealed class ModSpritePicker : IClickableMenu
         cellHeight = 64 + PADDING;
         for (int i = 0; i < (TEXTURE_COL_CNT * TEXTURE_ROW_CNT); i++)
         {
-            row = i % TEXTURE_COL_CNT;
-            col = i / TEXTURE_COL_CNT;
+            row = i / TEXTURE_COL_CNT;
+            col = i % TEXTURE_COL_CNT;
             myID = 200 + i;
             // string name, Rectangle bounds, string label, string hoverText, Texture2D texture, Rectangle sourceRect, float scale, bool drawShadow = false
             TexturePicks.Add(
                 new TexturePicksCC(new(0, 0, cellWidth, cellHeight), $"TexturePicks_{i}")
                 {
-                    BaseX = MARGIN + (PADDING + cellWidth) * row,
-                    BaseY = MARGIN + (PADDING + cellHeight) * (col + 1),
+                    BaseX = MARGIN + (PADDING + cellWidth) * col,
+                    BaseY = MARGIN + (PADDING + cellHeight) * row,
                     myID = myID,
-                    upNeighborID = row > 0 ? myID - TEXTURE_COL_CNT : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
-                    leftNeighborID = col > 0 ? myID - 1 : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
-                    rightNeighborID = col < TEXTURE_COL_CNT - 1 ? myID + 1 : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
+                    upNeighborID = col > 0 ? myID - TEXTURE_COL_CNT : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
+                    leftNeighborID = row > 0 ? myID - 1 : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
+                    rightNeighborID = row < TEXTURE_COL_CNT - 1 ? myID + 1 : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
                     downNeighborID =
-                        row < TEXTURE_ROW_CNT - 1 ? myID + TEXTURE_COL_CNT : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
+                        col < TEXTURE_ROW_CNT - 1 ? myID + TEXTURE_COL_CNT : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
                 }
             );
         }
@@ -273,25 +304,26 @@ internal sealed class ModSpritePicker : IClickableMenu
             height,
             Color.White
         );
-        SpriteText.drawStringWithScrollCenteredAt(
-            b,
-            currentMod.Mod.Name,
-            xPositionOnScreen + width / 2,
-            yPositionOnScreen - 64
-        );
         if (AtlasCurrIdx < 0)
         {
+            SpriteText.drawStringWithScrollCenteredAt(
+                b,
+                currentMod.Mod.Name,
+                xPositionOnScreen + width / 2,
+                yPositionOnScreen - 64
+            );
+
             DrawWithDisplayInfo(b, AtlasPicks, AtlasPicksDisplay, AtlasPicksDisplayIdx);
         }
         else
         {
-            Utility.drawTextWithShadow(
+            SpriteText.drawStringWithScrollCenteredAt(
                 b,
-                AtlasPicksDisplay[AtlasCurrIdx].Label,
-                Game1.dialogueFont,
-                new(xPositionOnScreen + MARGIN + PADDING, yPositionOnScreen + MARGIN + PADDING),
-                Game1.textColor
+                $"{currentMod.Mod.Name} - {AtlasPicksDisplay[AtlasCurrIdx].Label}",
+                xPositionOnScreen + width / 2,
+                yPositionOnScreen - 64
             );
+
             DrawWithDisplayInfo(b, TexturePicks, TexturePicksDisplayCurr, TexturePicksDisplayIdx);
         }
 
@@ -317,9 +349,11 @@ internal sealed class ModSpritePicker : IClickableMenu
         {
             if (TryCheckBounds(TexturePicks, TexturePicksDisplayCurr, TexturePicksDisplayIdx, x, y, out int index))
             {
-                ItemSpriteRuleAtlas ruleAtlas = (AtlasPicksDisplay[AtlasCurrIdx] as AtlasPickDisplayInfo)!.Atlas;
+                AtlasPickDisplayInfo atlasPickDisplay = (AtlasPickDisplayInfo)AtlasPicksDisplay[AtlasCurrIdx];
+                ItemSpriteRuleAtlas ruleAtlas = atlasPickDisplay.Atlas;
                 ruleAtlas.ChosenIdx = index;
                 updateCompTxForQId(ruleAtlas.QualifiedItemId);
+                atlasPickDisplay.UpdateIconCurrent();
             }
             AtlasCurrIdx = -1;
             return;
@@ -345,11 +379,7 @@ internal sealed class ModSpritePicker : IClickableMenu
 
     private bool PopulateDisplayData()
     {
-        AtlasCurrIdx = -1;
-        AtlasPicksDisplayIdx = 0;
-        TexturePicksDisplayIdx = 0;
-        AtlasPicksDisplay.Clear();
-        TexturePicksDisplayAll.Clear();
+        ResetDisplayData();
         if (
             !(
                 currentMod?.TryGetModRuleAtlas(
@@ -370,31 +400,57 @@ internal sealed class ModSpritePicker : IClickableMenu
             {
                 continue;
             }
-            if (ruleAtlas.SourceTextureList.Count == 1)
+            if (ruleAtlas.SourceTextureOptions.Count == 1)
                 continue;
-            AtlasPicksDisplay.Add(
-                new AtlasPickDisplayInfo(
-                    parsedItemData.GetTexture(),
-                    parsedItemData.GetSourceRect(),
-                    $"{parsedItemData.DisplayName}: {TokenParser.ParseText(ruleAtlas.ConfigName) ?? key}",
-                    ruleAtlas
-                )
-            );
-            int displayIdx = ruleAtlas.Rules.SelectMany(rule => rule.SpriteIndexList).Min();
+            Rectangle baseSourceRect = parsedItemData.GetSourceRect();
+            int displayIdx =
+                ruleAtlas.ConfigIconSpriteIndex ?? ruleAtlas.Rules.SelectMany(rule => rule.SpriteIndexList).Min();
             List<DisplayInfo> textureDisplayList = [];
-            foreach (SourceTextureOption option in ruleAtlas.SourceTextureList)
+            foreach (SourceTextureOption option in ruleAtlas.SourceTextureOptions)
             {
+                Texture2D sourceTx = helper.GameContent.Load<Texture2D>(option.SourceTextureAsset);
                 textureDisplayList.Add(
                     new(
-                        helper.GameContent.Load<Texture2D>(option.SourceTextureAsset!),
-                        parsedItemData.GetSourceRect(spriteIndex: displayIdx),
-                        TokenParser.ParseText(option.ConfigName) ?? option.Texture
+                        sourceTx,
+                        ItemSpriteComp.GetSourceRectForIndex(
+                            sourceTx.ActualWidth,
+                            displayIdx,
+                            new(baseSourceRect.Width, baseSourceRect.Height)
+                        ),
+                        option.Texture
                     )
                 );
             }
+            Texture2D currTx = helper.GameContent.Load<Texture2D>(ruleAtlas.ChosenSourceTexture.SourceTextureAsset);
+            AtlasPickDisplayInfo atlasPickDisplay = new(
+                parsedItemData.GetTexture(),
+                parsedItemData.GetSourceRect(),
+                TokenParser.ParseText(ruleAtlas.ConfigName) ?? $"{parsedItemData.DisplayName}({key})",
+                displayIdx,
+                ruleAtlas,
+                helper.GameContent
+            );
+            atlasPickDisplay.UpdateIconCurrent();
+            AtlasPicksDisplay.Add(atlasPickDisplay);
+
             TexturePicksDisplayAll.Add(textureDisplayList);
         }
         return TexturePicksDisplayAll.Any();
+    }
+
+    private void ResetDisplayData()
+    {
+        AtlasCurrIdx = -1;
+        AtlasPicksDisplayIdx = 0;
+        TexturePicksDisplayIdx = 0;
+        AtlasPicksDisplay.Clear();
+        TexturePicksDisplayAll.Clear();
+    }
+
+    protected override void cleanupBeforeExit()
+    {
+        ResetDisplayData();
+        base.cleanupBeforeExit();
     }
 
     #region DELEGATES
@@ -458,14 +514,14 @@ internal sealed class ModSpritePicker : IClickableMenu
                 sb.Append(parsedItemData.QualifiedItemId);
                 sb.Append(" -");
                 int idx = 0;
-                foreach (SourceTextureOption option in ruleAtlas.SourceTextureList)
+                foreach (SourceTextureOption option in ruleAtlas.SourceTextureOptions)
                 {
                     sb.Append("\n  ");
                     sb.Append(idx == ruleAtlas.ChosenIdx ? '*' : '.');
                     sb.Append(" [");
                     sb.Append(idx.ToString("D2"));
                     sb.Append("] ");
-                    sb.Append(TokenParser.ParseText(option.ConfigName) ?? option.Texture);
+                    sb.Append(option.Texture);
                     idx++;
                 }
                 sb.Append(' ');

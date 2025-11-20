@@ -3,36 +3,23 @@ using StardewModdingAPI;
 
 namespace DynamicItemSpriteCompositor.Models;
 
-public sealed class SourceTextureOption
-{
-    public string Id => Texture;
-    public string Texture { get; set; } = "";
-    public string? ConfigName { get; set; } = null;
-
-    internal IAssetName? SourceTextureAsset = null;
-
-    internal IAssetName GetAssetName(IGameContentHelper gameContent)
-    {
-        SourceTextureAsset = gameContent.ParseAssetName(Texture);
-        return SourceTextureAsset;
-    }
-
-    public static implicit operator SourceTextureOption(string value) => new() { Texture = value };
-}
+public sealed record SourceTextureOption(string Texture, IAssetName SourceTextureAsset);
 
 public sealed class ItemSpriteRuleAtlas
 {
     public string TypeIdentifier { get; set; } = "(O)";
     public string LocalItemId { get; set; } = "0";
     public string? ConfigName { get; set; } = null;
-    internal string QualifiedItemId => string.Concat(TypeIdentifier, LocalItemId);
+    public int? ConfigIconSpriteIndex { get; set; } = null;
 
-    [JsonConverter(typeof(SourceTextureOptionListConverter))]
-    public List<SourceTextureOption> SourceTextureList { get; set; } = [];
+    [JsonConverter(typeof(SourceTexturesConverter))]
+    public List<string> SourceTextures { get; set; } = [];
     public int? SourceSpritePerIndex { get; set; } = null;
     public List<SpriteIndexRule> Rules { get; set; } = [];
 
-    internal IAssetName? SourceModAsset { get; set; } = null;
+    internal string QualifiedItemId => string.Concat(TypeIdentifier, LocalItemId);
+    internal IAssetName SourceModAsset { get; set; } = null!;
+    internal List<SourceTextureOption> SourceTextureOptions { get; set; } = [];
     internal int ChosenIdx { get; set; } = 0;
-    internal SourceTextureOption ChosenSourceTexture => SourceTextureList[ChosenIdx];
+    internal SourceTextureOption ChosenSourceTexture => SourceTextureOptions[ChosenIdx];
 }

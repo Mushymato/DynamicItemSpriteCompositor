@@ -80,10 +80,22 @@ internal sealed record ModProidedDataHolder(IAssetName AssetName, IManifest Mod)
                         }
                     }
                 }
-                spriteAtlas.SourceTextureList.RemoveWhere(st =>
-                    string.IsNullOrEmpty(st.Texture) || !content.DoesAssetExist<Texture2D>(st.GetAssetName(content))
-                );
-                if (!spriteAtlas.SourceTextureList.Any())
+
+                spriteAtlas.SourceTextureOptions.Clear();
+                foreach (string texture in spriteAtlas.SourceTextures)
+                {
+                    if (string.IsNullOrEmpty(texture))
+                    {
+                        continue;
+                    }
+                    IAssetName assetName = content.ParseAssetName(texture);
+                    if (!content.DoesAssetExist<Texture2D>(assetName))
+                    {
+                        continue;
+                    }
+                    spriteAtlas.SourceTextureOptions.Add(new(texture, assetName));
+                }
+                if (!spriteAtlas.SourceTextureOptions.Any())
                 {
                     ModEntry.Log($"Atlas '{key}' from '{AssetName}' has no source textures, skipping.", LogLevel.Warn);
                     invalidKeys.Add(key);

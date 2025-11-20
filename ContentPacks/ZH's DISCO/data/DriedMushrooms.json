@@ -4,11 +4,6 @@
     // Load textures
     {
       "Action": "Load",
-      "Target": "DriedMushrooms/{{ModId}}",
-      "FromFile": "Assets/{{TargetPathOnly}}.png"
-    },
-    {
-      "Action": "Load",
       "Target": "DriedMushrooms/Bag/Dark Brown/{{ModId}},DriedMushrooms/Bag/Light Brown/{{ModId}},DriedMushrooms/Bag/Vibrant Brown/{{ModId}},DriedMushrooms/Jar/Checkered Pattern Lid/Brown Lid/{{ModId}},DriedMushrooms/Jar/Checkered Pattern Lid/Cool White Lid/{{ModId}},DriedMushrooms/Jar/Checkered Pattern Lid/Navy Lid/{{ModId}},DriedMushrooms/Jar/Checkered Pattern Lid/Off White Lid/{{ModId}},DriedMushrooms/Jar/Checkered Pattern Lid/Orange Lid/{{ModId}},DriedMushrooms/Jar/Checkered Pattern Lid/Warm White Lid/{{ModId}},DriedMushrooms/Jar/No Checkered Pattern Lid/Brown Lid/{{ModId}},DriedMushrooms/Jar/No Checkered Pattern Lid/Cool White Lid/{{ModId}},DriedMushrooms/Jar/No Checkered Pattern Lid/Navy Lid/{{ModId}},DriedMushrooms/Jar/No Checkered Pattern Lid/Off White Lid/{{ModId}},DriedMushrooms/Jar/No Checkered Pattern Lid/Orange Lid/{{ModId}},DriedMushrooms/Jar/No Checkered Pattern Lid/Warm White Lid/{{ModId}}",
       "FromFile": "All_Assets/{{TargetPathOnly}}/DriedMushrooms.png"
     },
@@ -20,56 +15,9 @@
         "DriedMushrooms": {
           "TypeIdentifier": "(O)",
           "LocalItemId": "DriedMushrooms",
-          "SourceTextureList": [
-            {
-              "Texture": "DriedMushrooms/{{ModId}}"
-            },
-            {
-              "Texture": "DriedMushrooms/Bag/Dark Brown/{{ModId}}"
-            },
-            {
-              "Texture": "DriedMushrooms/Bag/Light Brown/{{ModId}}"
-            },
-            {
-              "Texture": "DriedMushrooms/Bag/Vibrant Brown/{{ModId}}"
-            },
-            {
-              "Texture": "DriedMushrooms/Jar/Checkered Pattern Lid/Brown Lid/{{ModId}}"
-            },
-            {
-              "Texture": "DriedMushrooms/Jar/Checkered Pattern Lid/Cool White Lid/{{ModId}}"
-            },
-            {
-              "Texture": "DriedMushrooms/Jar/Checkered Pattern Lid/Navy Lid/{{ModId}}"
-            },
-            {
-              "Texture": "DriedMushrooms/Jar/Checkered Pattern Lid/Off White Lid/{{ModId}}"
-            },
-            {
-              "Texture": "DriedMushrooms/Jar/Checkered Pattern Lid/Orange Lid/{{ModId}}"
-            },
-            {
-              "Texture": "DriedMushrooms/Jar/Checkered Pattern Lid/Warm White Lid/{{ModId}}"
-            },
-            {
-              "Texture": "DriedMushrooms/Jar/No Checkered Pattern Lid/Brown Lid/{{ModId}}"
-            },
-            {
-              "Texture": "DriedMushrooms/Jar/No Checkered Pattern Lid/Cool White Lid/{{ModId}}"
-            },
-            {
-              "Texture": "DriedMushrooms/Jar/No Checkered Pattern Lid/Navy Lid/{{ModId}}"
-            },
-            {
-              "Texture": "DriedMushrooms/Jar/No Checkered Pattern Lid/Off White Lid/{{ModId}}"
-            },
-            {
-              "Texture": "DriedMushrooms/Jar/No Checkered Pattern Lid/Orange Lid/{{ModId}}"
-            },
-            {
-              "Texture": "DriedMushrooms/Jar/No Checkered Pattern Lid/Warm White Lid/{{ModId}}"
-            }
-          ],
+          "ConfigName": "[LocalizedText Strings\\Objects:DriedMushrooms_CollectionsTabName]",
+          "ConfigIconSpriteIndex": 0,
+          "SourceTextures": "DriedMushrooms/Bag/Dark Brown/{{ModId}},DriedMushrooms/Bag/Light Brown/{{ModId}},DriedMushrooms/Bag/Vibrant Brown/{{ModId}},DriedMushrooms/Jar/Checkered Pattern Lid/Brown Lid/{{ModId}},DriedMushrooms/Jar/Checkered Pattern Lid/Cool White Lid/{{ModId}},DriedMushrooms/Jar/Checkered Pattern Lid/Navy Lid/{{ModId}},DriedMushrooms/Jar/Checkered Pattern Lid/Off White Lid/{{ModId}},DriedMushrooms/Jar/Checkered Pattern Lid/Orange Lid/{{ModId}},DriedMushrooms/Jar/Checkered Pattern Lid/Warm White Lid/{{ModId}},DriedMushrooms/Jar/No Checkered Pattern Lid/Brown Lid/{{ModId}},DriedMushrooms/Jar/No Checkered Pattern Lid/Cool White Lid/{{ModId}},DriedMushrooms/Jar/No Checkered Pattern Lid/Navy Lid/{{ModId}},DriedMushrooms/Jar/No Checkered Pattern Lid/Off White Lid/{{ModId}},DriedMushrooms/Jar/No Checkered Pattern Lid/Orange Lid/{{ModId}},DriedMushrooms/Jar/No Checkered Pattern Lid/Warm White Lid/{{ModId}}",
           "SourceSpritePerIndex": 1,
           "Rules": [
             {

@@ -1,5 +1,4 @@
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using StardewValley;
@@ -84,12 +83,14 @@ public sealed class StringColorConverter : JsonConverter
     }
 }
 
-public sealed class ContextTagSetConverter : JsonConverter
+public abstract class StringSetConverter : JsonConverter
 {
     public override bool CanConvert(Type objectType)
     {
         return objectType == typeof(List<string>);
     }
+
+    public abstract List<string>? NormalizeStringSet(IEnumerable<string>? values);
 
     public override object? ReadJson(
         JsonReader reader,
@@ -103,20 +104,18 @@ public sealed class ContextTagSetConverter : JsonConverter
         {
             JTokenType.Null => null,
             JTokenType.String => FromString(token.ToObject<string>()),
-            _ => token.ToObject<List<string>>()?.Select(part => part.ToLowerInvariant()).ToHashSet().ToList(),
+            _ => NormalizeStringSet(token.ToObject<List<string>>()),
         };
     }
 
-    private static List<string>? FromString(string? strValue)
+    private List<string>? FromString(string? strValue)
     {
         if (string.IsNullOrEmpty(strValue))
             return null;
         string[] parts = strValue.Split(',');
         if (parts.Length <= 0)
             return null;
-        HashSet<string> ctags = parts.Select(part => part.ToLowerInvariant().Trim()).ToHashSet();
-        ctags.Remove(string.Empty);
-        return ctags.ToList();
+        return NormalizeStringSet(parts);
     }
 
     public override bool CanWrite => false;
@@ -127,34 +126,31 @@ public sealed class ContextTagSetConverter : JsonConverter
     }
 }
 
-public sealed class SourceTextureOptionListConverter : JsonConverter
+public class ContextTagsConverter : StringSetConverter
 {
-    public override bool CanConvert(Type objectType)
+    public override List<string>? NormalizeStringSet(IEnumerable<string>? values)
     {
-        return objectType == typeof(List<SourceTextureOption>);
+        if (values == null)
+            return null;
+        HashSet<string> valueSet = values.Select(ctag => ctag.ToLowerInvariant()).ToHashSet();
+        valueSet.Remove(string.Empty);
+        if (valueSet.Any())
+            return valueSet.ToList();
+        return null;
     }
+}
 
-    public override object? ReadJson(
-        JsonReader reader,
-        Type objectType,
-        object? existingValue,
-        JsonSerializer serializer
-    )
+public class SourceTexturesConverter : StringSetConverter
+{
+    public override List<string>? NormalizeStringSet(IEnumerable<string>? values)
     {
-        JToken token = JToken.Load(reader);
-        return token.Type switch
-        {
-            JTokenType.Null => null,
-            JTokenType.Array => token.ToObject<List<SourceTextureOption>>()?.ToList(),
-            JTokenType.String => token.ToObject<string>() is string texture ? [new() { Texture = texture }] : null,
-            _ => token.ToObject<SourceTextureOption>() is SourceTextureOption opt ? [opt] : null,
-        };
-    }
-
-    public override bool CanWrite => false;
-
-    public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
-    {
-        throw new NotImplementedException();
+        if (values == null)
+            return null;
+        HashSet<string> valueSet = values.ToHashSet();
+        valueSet.Remove(string.Empty);
+        valueSet.Remove(null!);
+        if (valueSet.Any())
+            return valueSet.ToList();
+        return null;
     }
 }
