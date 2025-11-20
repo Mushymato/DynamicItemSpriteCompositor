@@ -16,6 +16,8 @@ public sealed class SourceTextureOption
         SourceTextureAsset = gameContent.ParseAssetName(Texture);
         return SourceTextureAsset;
     }
+
+    public static implicit operator SourceTextureOption(string value) => new() { Texture = value };
 }
 
 public sealed class ItemSpriteRuleAtlas

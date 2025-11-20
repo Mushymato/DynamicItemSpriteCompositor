@@ -6,7 +6,7 @@ using StardewValley.Extensions;
 
 namespace DynamicItemSpriteCompositor.Framework;
 
-internal sealed record ModProidedDataHolder(IManifest Mod)
+internal sealed record ModProidedDataHolder(IAssetName AssetName, IManifest Mod)
 {
     internal bool IsValid { get; set; } = false;
     internal Dictionary<string, ItemSpriteRuleAtlas> Data
@@ -21,19 +21,18 @@ internal sealed record ModProidedDataHolder(IManifest Mod)
 
     internal bool TryGetModRuleAtlas(
         IGameContentHelper content,
-        IAssetName assetName,
         [NotNullWhen(true)] out Dictionary<string, ItemSpriteRuleAtlas>? modRuleAtlas
     )
     {
         modRuleAtlas = null;
         if (!IsValid)
         {
-            if (!content.DoesAssetExist<Dictionary<string, ItemSpriteRuleAtlas>>(assetName))
+            if (!content.DoesAssetExist<Dictionary<string, ItemSpriteRuleAtlas>>(AssetName))
             {
                 return false;
             }
             // csharpier-ignore
-            modRuleAtlas = content.Load<Dictionary<string, ItemSpriteRuleAtlas>>(assetName);
+            modRuleAtlas = content.Load<Dictionary<string, ItemSpriteRuleAtlas>>(AssetName);
             HashSet<string> previousQIds = Data.Select(kv => kv.Value.QualifiedItemId).ToHashSet();
 
             List<string> invalidKeys = [];
@@ -47,7 +46,7 @@ internal sealed record ModProidedDataHolder(IManifest Mod)
                 spriteAtlas.Rules.RemoveWhere(rule => rule.SpriteIndexList.Count == 0);
                 if (spriteAtlas.Rules.Count == 0)
                 {
-                    ModEntry.Log($"Atlas '{key}' from '{assetName}' has no valid rules, skipping.", LogLevel.Warn);
+                    ModEntry.Log($"Atlas '{key}' from '{AssetName}' has no valid rules, skipping.", LogLevel.Warn);
                     invalidKeys.Add(key);
                     continue;
                 }
@@ -86,11 +85,11 @@ internal sealed record ModProidedDataHolder(IManifest Mod)
                 );
                 if (!spriteAtlas.SourceTextureList.Any())
                 {
-                    ModEntry.Log($"Atlas '{key}' from '{assetName}' has no source textures, skipping.", LogLevel.Warn);
+                    ModEntry.Log($"Atlas '{key}' from '{AssetName}' has no source textures, skipping.", LogLevel.Warn);
                     invalidKeys.Add(key);
                     continue;
                 }
-                spriteAtlas.SourceModAsset = assetName;
+                spriteAtlas.SourceModAsset = AssetName;
 
                 string thisQId = spriteAtlas.QualifiedItemId;
                 if (

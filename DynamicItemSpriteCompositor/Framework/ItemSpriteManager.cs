@@ -47,7 +47,7 @@ internal sealed class ItemSpriteManager
                 IAssetName modAssetName = helper.GameContent.ParseAssetName(
                     string.Concat(ModEntry.ModId, "/Data/", info.Manifest.UniqueID)
                 );
-                modDataAssets[modAssetName] = new(info.Manifest);
+                modDataAssets[modAssetName] = new(modAssetName, info.Manifest);
                 ModEntry.Log($"Tracking '{modAssetName}' asset for '{info.Manifest.UniqueID}'");
             }
         }
@@ -162,12 +162,11 @@ internal sealed class ItemSpriteManager
         }
 
         List<ItemSpriteRuleAtlas> combinedRules = [];
-        foreach ((IAssetName assetName, ModProidedDataHolder dataHolder) in modDataAssets)
+        foreach (ModProidedDataHolder dataHolder in modDataAssets.Values)
         {
             if (
                 !dataHolder.TryGetModRuleAtlas(
                     helper.GameContent,
-                    assetName,
                     out Dictionary<string, ItemSpriteRuleAtlas>? modRuleAtlas
                 )
             )
