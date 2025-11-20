@@ -2,6 +2,7 @@ using System.Text;
 using DynamicItemSpriteCompositor.Models;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using StardewModdingAPI;
 using StardewValley;
 using StardewValley.BellsAndWhistles;
@@ -208,11 +209,11 @@ internal sealed class ModSpritePicker : IClickableMenu
                     BaseX = MARGIN + (PADDING / 2 + cellWidth) * col,
                     BaseY = MARGIN + (PADDING + cellHeight) * row,
                     myID = myID,
-                    upNeighborID = col > 0 ? myID - ATLAS_COL_CNT : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
-                    leftNeighborID = row > 0 ? myID - 1 : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
-                    rightNeighborID = row < ATLAS_COL_CNT - 1 ? myID + 1 : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
+                    upNeighborID = row > 0 ? myID - ATLAS_COL_CNT : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
+                    leftNeighborID = col > 0 ? myID - 1 : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
+                    rightNeighborID = col < ATLAS_COL_CNT - 1 ? myID + 1 : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
                     downNeighborID =
-                        col < ATLAS_ROW_CNT - 1 ? myID + ATLAS_COL_CNT : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
+                        row < ATLAS_ROW_CNT - 1 ? myID + ATLAS_COL_CNT : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
                 }
             );
         }
@@ -231,11 +232,11 @@ internal sealed class ModSpritePicker : IClickableMenu
                     BaseX = MARGIN + (PADDING + cellWidth) * col,
                     BaseY = MARGIN + (PADDING + cellHeight) * row,
                     myID = myID,
-                    upNeighborID = col > 0 ? myID - TEXTURE_COL_CNT : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
-                    leftNeighborID = row > 0 ? myID - 1 : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
-                    rightNeighborID = row < TEXTURE_COL_CNT - 1 ? myID + 1 : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
+                    upNeighborID = row > 0 ? myID - TEXTURE_COL_CNT : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
+                    leftNeighborID = col > 0 ? myID - 1 : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
+                    rightNeighborID = col < TEXTURE_COL_CNT - 1 ? myID + 1 : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
                     downNeighborID =
-                        col < TEXTURE_ROW_CNT - 1 ? myID + TEXTURE_COL_CNT : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
+                        row < TEXTURE_ROW_CNT ? myID + TEXTURE_COL_CNT : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
                 }
             );
         }
@@ -328,10 +329,7 @@ internal sealed class ModSpritePicker : IClickableMenu
         }
 
         Game1.mouseCursorTransparency = 1f;
-        if (!Game1.options.SnappyMenus)
-        {
-            drawMouse(b);
-        }
+        drawMouse(b);
     }
 
     public override void receiveLeftClick(int x, int y, bool playSound = true)
@@ -342,6 +340,7 @@ internal sealed class ModSpritePicker : IClickableMenu
             {
                 AtlasCurrIdx = index;
                 TexturePicksDisplayIdx = 0;
+                snapToDefaultClickableComponent();
                 return;
             }
         }
@@ -356,9 +355,46 @@ internal sealed class ModSpritePicker : IClickableMenu
                 atlasPickDisplay.UpdateIconCurrent();
             }
             AtlasCurrIdx = -1;
+            snapToDefaultClickableComponent();
             return;
         }
         base.receiveLeftClick(x, y, playSound);
+    }
+
+    public override void receiveKeyPress(Keys key)
+    {
+        if (AtlasCurrIdx >= 0 && key != Keys.None && Game1.options.doesInputListContain(Game1.options.menuButton, key))
+        {
+            AtlasCurrIdx = -1;
+            return;
+        }
+        base.receiveKeyPress(key);
+    }
+
+    public override bool readyToClose()
+    {
+        return base.readyToClose() && AtlasCurrIdx < 0;
+    }
+
+    public override void snapToDefaultClickableComponent()
+    {
+        if (AtlasCurrIdx < 0)
+        {
+            currentlySnappedComponent = getComponentWithID(100);
+        }
+        else
+        {
+            currentlySnappedComponent = getComponentWithID(200);
+        }
+        snapCursorToCurrentSnappedComponent();
+    }
+
+    public override void populateClickableComponentList()
+    {
+        allClickableComponents ??= [];
+        allClickableComponents.Clear();
+        allClickableComponents.AddRange(AtlasPicks);
+        allClickableComponents.AddRange(TexturePicks);
     }
 
     private void RecenterMenu()
@@ -471,7 +507,12 @@ internal sealed class ModSpritePicker : IClickableMenu
         if (PopulateDisplayData())
         {
             RecenterMenu();
-            populateClickableComponentList();
+            if (Game1.options.snappyMenus && Game1.options.gamepadControls)
+            {
+                if (allClickableComponents == null)
+                    populateClickableComponentList();
+                snapToDefaultClickableComponent();
+            }
             Game1.activeClickableMenu = this;
         }
     }
