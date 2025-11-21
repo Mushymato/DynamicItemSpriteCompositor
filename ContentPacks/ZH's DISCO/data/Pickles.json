@@ -7,7 +7,7 @@
       "Target": "Pickles/Checkered Pattern Lid/Off White Lid/{{ModId}},Pickles/Checkered Pattern Lid/Brown Lid/{{ModId}},Pickles/Checkered Pattern Lid/Cool White Lid/{{ModId}},Pickles/Checkered Pattern Lid/Navy Lid/{{ModId}},Pickles/Checkered Pattern Lid/Orange Lid/{{ModId}},Pickles/Checkered Pattern Lid/Warm White Lid/{{ModId}},Pickles/No Checkered Pattern Lid/Brown Lid/{{ModId}},Pickles/No Checkered Pattern Lid/Cool White Lid/{{ModId}},Pickles/No Checkered Pattern Lid/Navy Lid/{{ModId}},Pickles/No Checkered Pattern Lid/Off White Lid/{{ModId}},Pickles/No Checkered Pattern Lid/Orange Lid/{{ModId}},Pickles/No Checkered Pattern Lid/Warm White Lid/{{ModId}}",
       "FromFile": "All_Assets/{{TargetPathOnly}}/Pickles.png"
     },
-    // DriedMushrooms
+    // DISCO
     {
       "Action": "EditData",
       "Target": "mushymato.DISCO/Data/{{ModId}}",

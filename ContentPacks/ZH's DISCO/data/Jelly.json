@@ -23,7 +23,7 @@
     - Jelly/No Label/Checkererd Pattern Lid/Brown Lid/Red_Cactus
     - Jelly/No Label/Checkererd Pattern Lid/Cool White Lid/Red_Cactus
     */
-    // DriedMushrooms
+    // DISCO
     {
       "Action": "EditData",
       "Target": "mushymato.DISCO/Data/{{ModId}}",

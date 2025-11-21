@@ -7,7 +7,7 @@
       "Target": "Juice/Yellow Lid/{{ModId}},Juice/Brown Lid/{{ModId}},Juice/Navy Lid/{{ModId}},Juice/White Lid/{{ModId}}",
       "FromFile": "All_Assets/{{TargetPathOnly}}/Juice.png"
     },
-    // DriedMushrooms
+    // DISCO
     {
       "Action": "EditData",
       "Target": "mushymato.DISCO/Data/{{ModId}}",
