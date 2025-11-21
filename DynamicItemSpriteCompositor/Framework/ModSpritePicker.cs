@@ -12,7 +12,27 @@ using StardewValley.TokenizableStrings;
 
 namespace DynamicItemSpriteCompositor.Framework;
 
-internal record DisplayInfo(Texture2D Icon, Rectangle IconSourceRect, string Label);
+internal record DisplayInfo(Texture2D Icon, Rectangle IconSourceRect, string Label)
+{
+    internal float Scale = 64f / IconSourceRect.Height;
+    internal int XOffset = (int)((64 - IconSourceRect.Width * (64f / IconSourceRect.Height)) / 2);
+    internal bool Chosen { get; set; } = false;
+
+    internal void DrawIcon(SpriteBatch b, Rectangle bounds)
+    {
+        b.Draw(
+            Icon,
+            new(bounds.X + ModSpritePicker.PADDING + XOffset, bounds.Y + ModSpritePicker.PADDING),
+            IconSourceRect,
+            Color.White,
+            0,
+            Vector2.Zero,
+            Scale,
+            SpriteEffects.None,
+            1f
+        );
+    }
+}
 
 internal sealed record AtlasPickDisplayInfo(
     Texture2D Icon,
@@ -20,7 +40,9 @@ internal sealed record AtlasPickDisplayInfo(
     string Label,
     int DisplayIdx,
     ItemSpriteRuleAtlas Atlas,
-    IGameContentHelper Content
+    IGameContentHelper Content,
+    Texture2D IconError,
+    Rectangle IconErrorSourceRect
 ) : DisplayInfo(Icon, IconSourceRect, Label)
 {
     internal Texture2D? IconCurrent { get; private set; } = null!;
@@ -28,12 +50,20 @@ internal sealed record AtlasPickDisplayInfo(
 
     internal void UpdateIconCurrent()
     {
-        IconCurrent = Content.Load<Texture2D>(Atlas.ChosenSourceTexture.SourceTextureAsset);
-        IconCurrentSourceRect = ItemSpriteComp.GetSourceRectForIndex(
-            IconCurrent.ActualWidth,
-            DisplayIdx,
-            new(IconSourceRect.Width, IconSourceRect.Height)
-        );
+        if (Atlas.Enabled)
+        {
+            IconCurrent = Content.Load<Texture2D>(Atlas.ChosenSourceTexture.SourceTextureAsset);
+            IconCurrentSourceRect = ItemSpriteComp.GetSourceRectForIndex(
+                IconCurrent.ActualWidth,
+                DisplayIdx,
+                new(IconSourceRect.Width, IconSourceRect.Height)
+            );
+        }
+        else
+        {
+            IconCurrent = IconError;
+            IconCurrentSourceRect = IconErrorSourceRect;
+        }
     }
 }
 
@@ -51,18 +81,19 @@ internal class RelativeCC(Rectangle bounds, string name) : ClickableComponent(bo
         bounds.Y = BaseY + y;
     }
 
-    public virtual void Draw(SpriteBatch b, DisplayInfo display, float alpha) { }
+    public virtual void Draw(SpriteBatch b) { }
+
+    public virtual void Draw(SpriteBatch b, DisplayInfo display) { }
 }
 
 internal sealed class AtlasPickCC(Rectangle bounds, string name) : RelativeCC(bounds, name)
 {
-    public override void Draw(SpriteBatch b, DisplayInfo display, float alpha)
+    public override void Draw(SpriteBatch b, DisplayInfo display)
     {
         if (!visible)
         {
             return;
         }
-        Color clr = Color.White * alpha;
 
         AtlasPickDisplayInfo aDisplay = (AtlasPickDisplayInfo)display;
 
@@ -74,28 +105,20 @@ internal sealed class AtlasPickCC(Rectangle bounds, string name) : RelativeCC(bo
             bounds.Y,
             bounds.Width,
             bounds.Height,
-            clr,
+            Color.White,
             drawShadow: false
         );
-        b.Draw(
-            aDisplay.Icon,
-            new(bounds.X + ModSpritePicker.PADDING, bounds.Y + ModSpritePicker.PADDING, 64, 64),
-            aDisplay.IconSourceRect,
-            clr,
-            0,
-            Vector2.Zero,
-            SpriteEffects.None,
-            1f
-        );
+        aDisplay.DrawIcon(b, bounds);
         if (aDisplay.IconCurrent != null)
         {
             b.Draw(
                 aDisplay.IconCurrent,
-                new(bounds.X + ModSpritePicker.PADDING * 2 + 64, bounds.Y + ModSpritePicker.PADDING, 64, 64),
+                new(bounds.X + ModSpritePicker.PADDING * 2 + 64 + aDisplay.XOffset, bounds.Y + ModSpritePicker.PADDING),
                 aDisplay.IconCurrentSourceRect,
-                clr,
+                Color.White,
                 0,
                 Vector2.Zero,
+                aDisplay.Scale,
                 SpriteEffects.None,
                 1f
             );
@@ -105,36 +128,51 @@ internal sealed class AtlasPickCC(Rectangle bounds, string name) : RelativeCC(bo
             aDisplay.Label,
             Game1.smallFont,
             new(bounds.X + (ModSpritePicker.PADDING * 2 + 64) * 2, bounds.Y + ModSpritePicker.PADDING + 12),
-            Game1.textColor * alpha
+            Game1.textColor
         );
     }
 }
 
 internal sealed class TexturePicksCC(Rectangle bounds, string name) : RelativeCC(bounds, name)
 {
-    public override void Draw(SpriteBatch b, DisplayInfo display, float alpha)
+    public override void Draw(SpriteBatch b, DisplayInfo display)
     {
         if (!visible)
         {
             return;
         }
-        Color clr = Color.White * alpha;
 
         IClickableMenu.drawTextureBox(
             b,
             Game1.menuTexture,
-            MenuRectRaised,
+            display.Chosen ? MenuRectInset : MenuRectRaised,
             bounds.X,
             bounds.Y,
             bounds.Width,
             bounds.Height,
-            clr,
+            Color.White,
             drawShadow: false
         );
+        display.DrawIcon(b, bounds);
+    }
+}
+
+internal sealed class ArrowCC(Rectangle bounds, string name) : RelativeCC(bounds, name)
+{
+    internal Rectangle CursorsSourceRect { get; set; }
+
+    public override void Draw(SpriteBatch b)
+    {
+        if (!visible)
+        {
+            return;
+        }
+        Color clr = Color.White;
+
         b.Draw(
-            display.Icon,
-            new(bounds.X + ModSpritePicker.PADDING / 2, bounds.Y + ModSpritePicker.PADDING / 2, 64, 64),
-            display.IconSourceRect,
+            Game1.mouseCursors,
+            new(bounds.X, bounds.Y, 64, 64),
+            CursorsSourceRect,
             clr,
             0,
             Vector2.Zero,
@@ -152,16 +190,25 @@ internal sealed class ModSpritePicker : IClickableMenu
     internal const int ATLAS_ROW_CNT = 6;
     internal const int ATLAS_COL_CNT = 2;
     internal const int TEXTURE_ROW_CNT = 6;
-    internal const int TEXTURE_COL_CNT = 10;
+    internal const int TEXTURE_COL_CNT = 9;
 
     private readonly Rectangle MenuRectBG = new(0, 256, 60, 60);
 
-    private readonly StringBuilder sb = new();
     private readonly IModHelper helper;
-    private readonly Dictionary<IAssetName, ModProidedDataHolder> modDataAssets;
-    private readonly Action<string> updateCompTxForQId;
+    private readonly Action<string, bool> updateForQId;
 
-    private ModProidedDataHolder? currentMod = null;
+    private readonly List<ModProidedDataHolder> modDataHolders;
+    private int CurrentModIdx
+    {
+        get => field;
+        set
+        {
+            field = value;
+            PopulateDisplayData();
+        }
+    } = -1;
+    private ModProidedDataHolder? CurrentMod =>
+        (CurrentModIdx < 0 || CurrentModIdx >= modDataHolders.Count) ? null : modDataHolders[CurrentModIdx];
 
     private readonly List<RelativeCC> AtlasPicks = [];
     private int AtlasPicksDisplayIdx = 0;
@@ -174,22 +221,30 @@ internal sealed class ModSpritePicker : IClickableMenu
     private readonly List<List<DisplayInfo>> TexturePicksDisplayAll = [];
     private List<DisplayInfo> TexturePicksDisplayCurr => TexturePicksDisplayAll[AtlasCurrIdx];
 
+    private readonly ArrowCC Mod_L = new(new(0, 0, 64, 64), "Mod_L") { CursorsSourceRect = new(0, 256, 64, 64) };
+    private readonly ArrowCC Mod_R = new(new(0, 0, 64, 64), "Mod_R") { CursorsSourceRect = new(0, 192, 64, 64) };
+
     internal ModSpritePicker(
         IModHelper helper,
         Dictionary<IAssetName, ModProidedDataHolder> modDataAssets,
-        Action<string> updateCompTxForQId
+        Action<string, bool> updateForQId
     )
         : base(
             Game1.viewport.X + 96,
             Game1.viewport.Y + 96,
-            (64 + PADDING * 2) * TEXTURE_COL_CNT + MARGIN * 2,
-            (64 + PADDING * 2) * ATLAS_ROW_CNT + MARGIN * 2,
+            (64 + PADDING * 3) * TEXTURE_COL_CNT + MARGIN * 2,
+            (64 + PADDING * 3) * ATLAS_ROW_CNT + MARGIN * 2,
             showUpperRightCloseButton: false
         )
     {
         this.helper = helper;
-        this.modDataAssets = modDataAssets;
-        this.updateCompTxForQId = updateCompTxForQId;
+        this.modDataHolders = modDataAssets.Values.ToList();
+        this.updateForQId = updateForQId;
+
+        Mod_L.BaseX = 0;
+        Mod_L.BaseY = -64 - PADDING;
+        Mod_R.BaseX = width - 64;
+        Mod_R.BaseY = -64 - PADDING;
 
         int cellWidth = width / 2 - MARGIN - PADDING / 4;
         int cellHeight = (height - MARGIN * 2) / 6;
@@ -218,8 +273,8 @@ internal sealed class ModSpritePicker : IClickableMenu
             );
         }
 
-        cellWidth = 64 + PADDING;
-        cellHeight = 64 + PADDING;
+        cellWidth = 64 + PADDING * 2;
+        cellHeight = 64 + PADDING * 2;
         for (int i = 0; i < (TEXTURE_COL_CNT * TEXTURE_ROW_CNT); i++)
         {
             row = i / TEXTURE_COL_CNT;
@@ -243,25 +298,27 @@ internal sealed class ModSpritePicker : IClickableMenu
 
         // WIP menu
         helper.ConsoleCommands.Add(
-            "disco-pick-cli",
-            "Configure which sprite is being used for each content pack.",
-            ConsoleDiscoPickCLI
-        );
-        helper.ConsoleCommands.Add(
             "disco-pick",
             "Configure which sprite is being used for each content pack.",
             ConsoleDiscoPickUI
         );
     }
 
-    public static void DrawWithDisplayInfo(SpriteBatch b, List<RelativeCC> picks, List<DisplayInfo> displays, int start)
+    public static void DrawWithDisplayInfo(
+        SpriteBatch b,
+        List<RelativeCC> picks,
+        List<DisplayInfo> displays,
+        int start,
+        int chosen = -1
+    )
     {
         int length = Math.Min(picks.Count, displays.Count - start);
-        for (int i = start; i < length; i++)
+        for (int i = 0; i < length; i++)
         {
             RelativeCC pick = picks[i];
-            DisplayInfo disp = displays[i];
-            pick.Draw(b, disp, 1f);
+            DisplayInfo disp = displays[start + i];
+            disp.Chosen = chosen == start + i;
+            pick.Draw(b, disp);
         }
     }
 
@@ -290,7 +347,7 @@ internal sealed class ModSpritePicker : IClickableMenu
 
     public override void draw(SpriteBatch b)
     {
-        if (currentMod == null)
+        if (CurrentMod == null)
         {
             return;
         }
@@ -309,23 +366,31 @@ internal sealed class ModSpritePicker : IClickableMenu
         {
             SpriteText.drawStringWithScrollCenteredAt(
                 b,
-                currentMod.Mod.Name,
+                CurrentMod.Mod.Name,
                 xPositionOnScreen + width / 2,
                 yPositionOnScreen - 64
             );
-
+            Mod_L.Draw(b);
+            Mod_R.Draw(b);
             DrawWithDisplayInfo(b, AtlasPicks, AtlasPicksDisplay, AtlasPicksDisplayIdx);
         }
         else
         {
             SpriteText.drawStringWithScrollCenteredAt(
                 b,
-                $"{currentMod.Mod.Name} - {AtlasPicksDisplay[AtlasCurrIdx].Label}",
+                $"{CurrentMod.Mod.Name} - {AtlasPicksDisplay[AtlasCurrIdx].Label}",
                 xPositionOnScreen + width / 2,
                 yPositionOnScreen - 64
             );
 
-            DrawWithDisplayInfo(b, TexturePicks, TexturePicksDisplayCurr, TexturePicksDisplayIdx);
+            ItemSpriteRuleAtlas atlas = ((AtlasPickDisplayInfo)AtlasPicksDisplay[AtlasCurrIdx]).Atlas;
+            DrawWithDisplayInfo(
+                b,
+                TexturePicks,
+                TexturePicksDisplayCurr,
+                TexturePicksDisplayIdx,
+                atlas.Enabled ? atlas.ChosenIdx + 1 : 0
+            );
         }
 
         Game1.mouseCursorTransparency = 1f;
@@ -336,11 +401,20 @@ internal sealed class ModSpritePicker : IClickableMenu
     {
         if (AtlasCurrIdx < 0)
         {
+            if (Mod_L.bounds.Contains(x, y))
+            {
+                PrevMod();
+            }
+            else if (Mod_R.bounds.Contains(x, y))
+            {
+                NextMod();
+            }
             if (TryCheckBounds(AtlasPicks, AtlasPicksDisplay, AtlasPicksDisplayIdx, x, y, out int index))
             {
                 AtlasCurrIdx = index;
                 TexturePicksDisplayIdx = 0;
                 snapToDefaultClickableComponent();
+                Game1.playSound("bigSelect");
                 return;
             }
         }
@@ -350,12 +424,28 @@ internal sealed class ModSpritePicker : IClickableMenu
             {
                 AtlasPickDisplayInfo atlasPickDisplay = (AtlasPickDisplayInfo)AtlasPicksDisplay[AtlasCurrIdx];
                 ItemSpriteRuleAtlas ruleAtlas = atlasPickDisplay.Atlas;
-                ruleAtlas.ChosenIdx = index;
-                updateCompTxForQId(ruleAtlas.QualifiedItemId);
+                index -= 1;
+                if (index < 0)
+                {
+                    ruleAtlas.Enabled = false;
+                    updateForQId(ruleAtlas.QualifiedItemId, true);
+                }
+                else if (index != ruleAtlas.ChosenIdx || !ruleAtlas.Enabled)
+                {
+                    bool enabledStatusChanged = !ruleAtlas.Enabled;
+                    ruleAtlas.Enabled = true;
+                    ruleAtlas.ChosenIdx = index;
+                    updateForQId(ruleAtlas.QualifiedItemId, enabledStatusChanged);
+                }
                 atlasPickDisplay.UpdateIconCurrent();
+                Game1.playSound("smallSelect");
             }
-            AtlasCurrIdx = -1;
-            snapToDefaultClickableComponent();
+            else
+            {
+                AtlasCurrIdx = -1;
+                snapToDefaultClickableComponent();
+                Game1.playSound("bigDeSelect");
+            }
             return;
         }
         base.receiveLeftClick(x, y, playSound);
@@ -366,9 +456,67 @@ internal sealed class ModSpritePicker : IClickableMenu
         if (AtlasCurrIdx >= 0 && key != Keys.None && Game1.options.doesInputListContain(Game1.options.menuButton, key))
         {
             AtlasCurrIdx = -1;
+            snapToDefaultClickableComponent();
             return;
         }
         base.receiveKeyPress(key);
+    }
+
+    public override void receiveGamePadButton(Buttons button)
+    {
+        if (AtlasCurrIdx == -1)
+        {
+            switch (button)
+            {
+                case Buttons.LeftShoulder:
+                    PrevMod();
+                    snapToDefaultClickableComponent();
+                    return;
+                case Buttons.RightShoulder:
+                    NextMod();
+                    snapToDefaultClickableComponent();
+                    return;
+            }
+        }
+        base.receiveGamePadButton(button);
+    }
+
+    public override void receiveScrollWheelAction(int direction)
+    {
+        bool scrolled = false;
+        if (AtlasCurrIdx == -1)
+        {
+            if (direction > 0 && AtlasPicksDisplayIdx > 0)
+            {
+                AtlasPicksDisplayIdx -= ATLAS_COL_CNT;
+                scrolled = true;
+            }
+            else if (direction < 0 && AtlasPicksDisplayIdx < Math.Max(0, AtlasPicksDisplay.Count - AtlasPicks.Count))
+            {
+                AtlasPicksDisplayIdx += ATLAS_COL_CNT;
+                scrolled = true;
+            }
+        }
+        else
+        {
+            if (direction > 0 && TexturePicksDisplayIdx > 0)
+            {
+                TexturePicksDisplayIdx -= TEXTURE_COL_CNT;
+                scrolled = true;
+            }
+            else if (
+                direction < 0
+                && TexturePicksDisplayIdx < Math.Max(0, TexturePicksDisplayCurr.Count - TexturePicks.Count)
+            )
+            {
+                TexturePicksDisplayIdx += TEXTURE_COL_CNT;
+                scrolled = true;
+            }
+        }
+        if (scrolled)
+        {
+            Game1.playSound("shiny4");
+        }
     }
 
     public override bool readyToClose()
@@ -411,14 +559,23 @@ internal sealed class ModSpritePicker : IClickableMenu
         {
             ctc.Reposition(xPositionOnScreen, yPositionOnScreen);
         }
+
+        Mod_L.Reposition(xPositionOnScreen, yPositionOnScreen);
+        Mod_R.Reposition(xPositionOnScreen, yPositionOnScreen);
+    }
+
+    public override void gameWindowSizeChanged(Rectangle oldBounds, Rectangle newBounds)
+    {
+        RecenterMenu();
     }
 
     private bool PopulateDisplayData()
     {
         ResetDisplayData();
+
         if (
             !(
-                currentMod?.TryGetModRuleAtlas(
+                CurrentMod?.TryGetModRuleAtlas(
                     helper.GameContent,
                     out Dictionary<string, ItemSpriteRuleAtlas>? modRuleAtlas
                 ) ?? false
@@ -436,12 +593,17 @@ internal sealed class ModSpritePicker : IClickableMenu
             {
                 continue;
             }
-            if (ruleAtlas.SourceTextureOptions.Count == 1)
-                continue;
             Rectangle baseSourceRect = parsedItemData.GetSourceRect();
             int displayIdx =
                 ruleAtlas.ConfigIconSpriteIndex ?? ruleAtlas.Rules.SelectMany(rule => rule.SpriteIndexList).Min();
-            List<DisplayInfo> textureDisplayList = [];
+            List<DisplayInfo> textureDisplayList =
+            [
+                new(
+                    parsedItemData.ItemType.GetErrorTexture(),
+                    parsedItemData.ItemType.GetErrorSourceRect(),
+                    $"{ModEntry.ModId}_DISABLE"
+                ),
+            ];
             foreach (SourceTextureOption option in ruleAtlas.SourceTextureOptions)
             {
                 Texture2D sourceTx = helper.GameContent.Load<Texture2D>(option.SourceTextureAsset);
@@ -464,7 +626,9 @@ internal sealed class ModSpritePicker : IClickableMenu
                 TokenParser.ParseText(ruleAtlas.ConfigName) ?? $"{parsedItemData.DisplayName}({key})",
                 displayIdx,
                 ruleAtlas,
-                helper.GameContent
+                helper.GameContent,
+                parsedItemData.ItemType.GetErrorTexture(),
+                parsedItemData.ItemType.GetErrorSourceRect()
             );
             atlasPickDisplay.UpdateIconCurrent();
             AtlasPicksDisplay.Add(atlasPickDisplay);
@@ -483,25 +647,85 @@ internal sealed class ModSpritePicker : IClickableMenu
         TexturePicksDisplayAll.Clear();
     }
 
+    private bool HasDisplayData(ModProidedDataHolder holder)
+    {
+        return holder.TryGetModRuleAtlas(helper.GameContent, out Dictionary<string, ItemSpriteRuleAtlas>? modRuleAtlas)
+            && modRuleAtlas.Any();
+    }
+
+    private void NextMod()
+    {
+        int i = CurrentModIdx + 1;
+        if (i < 0 || i >= modDataHolders.Count)
+            i = 0;
+        while (i < modDataHolders.Count)
+        {
+            if (HasDisplayData(modDataHolders[i]))
+            {
+                CurrentModIdx = i;
+                Game1.playSound("shwip");
+                return;
+            }
+            i++;
+        }
+        if (CurrentModIdx <= 0 || CurrentModIdx >= modDataHolders.Count - 1)
+            return;
+        i = 0;
+        int prev = CurrentModIdx;
+        while (i < prev)
+        {
+            if (HasDisplayData(modDataHolders[i]))
+            {
+                CurrentModIdx = i;
+                Game1.playSound("shwip");
+                return;
+            }
+            i++;
+        }
+    }
+
+    private void PrevMod()
+    {
+        int i = CurrentModIdx - 1;
+        if (i < 0 || i >= modDataHolders.Count)
+            i = modDataHolders.Count - 1;
+        while (i >= 0)
+        {
+            if (HasDisplayData(modDataHolders[i]))
+            {
+                CurrentModIdx = i;
+                Game1.playSound("shwip");
+                return;
+            }
+            i--;
+        }
+        if (CurrentModIdx <= 0 || CurrentModIdx >= modDataHolders.Count - 1)
+            return;
+        i = modDataHolders.Count - 1;
+        int prev = CurrentModIdx;
+        while (i >= prev)
+        {
+            if (HasDisplayData(modDataHolders[i]))
+            {
+                CurrentModIdx = i;
+                Game1.playSound("shwip");
+                return;
+            }
+            i--;
+        }
+    }
+
     protected override void cleanupBeforeExit()
     {
         ResetDisplayData();
         base.cleanupBeforeExit();
     }
 
-    #region DELEGATES
-    private void ConsoleDiscoPickUI(string arg1, string[] arg2)
+    private void OpenPickUI()
     {
-        if (currentMod == null)
+        if (CurrentMod == null)
         {
-            foreach (ModProidedDataHolder dataHolder in modDataAssets.Values)
-            {
-                if (dataHolder.TryGetModRuleAtlas(helper.GameContent, out _))
-                {
-                    currentMod = dataHolder;
-                    continue;
-                }
-            }
+            NextMod();
         }
 
         if (PopulateDisplayData())
@@ -517,80 +741,5 @@ internal sealed class ModSpritePicker : IClickableMenu
         }
     }
 
-    private void ConsoleDiscoPickCLI(string command, string[] args)
-    {
-        foreach (ModProidedDataHolder dataHolder in modDataAssets.Values)
-        {
-            if (
-                !dataHolder.TryGetModRuleAtlas(
-                    helper.GameContent,
-                    out Dictionary<string, ItemSpriteRuleAtlas>? modRuleAtlas
-                )
-            )
-            {
-                continue;
-            }
-            if (modRuleAtlas.Count == 0)
-                continue;
-
-            sb.Append("\n= [");
-            sb.Append(dataHolder.Mod.UniqueID);
-            sb.Append("] ");
-            sb.Append(dataHolder.Mod.Name);
-            sb.Append(" =");
-            foreach ((string key, ItemSpriteRuleAtlas ruleAtlas) in modRuleAtlas)
-            {
-                if (
-                    ItemSpriteManager.SafeResolveMetadata(ruleAtlas.QualifiedItemId)?.GetParsedData()
-                    is not ParsedItemData parsedItemData
-                )
-                {
-                    continue;
-                }
-                sb.Append("\n- [");
-                sb.Append(key);
-                sb.Append("] ");
-                sb.Append(parsedItemData.DisplayName);
-                sb.Append(" - ");
-                sb.Append(parsedItemData.QualifiedItemId);
-                sb.Append(" -");
-                int idx = 0;
-                foreach (SourceTextureOption option in ruleAtlas.SourceTextureOptions)
-                {
-                    sb.Append("\n  ");
-                    sb.Append(idx == ruleAtlas.ChosenIdx ? '*' : '.');
-                    sb.Append(" [");
-                    sb.Append(idx.ToString("D2"));
-                    sb.Append("] ");
-                    sb.Append(option.Texture);
-                    idx++;
-                }
-                sb.Append(' ');
-            }
-        }
-
-        sb.Append('\n');
-        ModEntry.Log(sb.ToString(), LogLevel.Info);
-        sb.Clear();
-
-        if (args.Length >= 3)
-        {
-            foreach (ModProidedDataHolder? dataHolder in modDataAssets.Values)
-            {
-                if (
-                    dataHolder.IsValid
-                    && dataHolder.Mod.UniqueID == args[0]
-                    && dataHolder.Data.TryGetValue(args[1], out ItemSpriteRuleAtlas? ruleAtlas)
-                    && int.TryParse(args[2], out int idx)
-                    && ruleAtlas.ChosenIdx != idx
-                )
-                {
-                    ruleAtlas.ChosenIdx = idx;
-                    ModEntry.Log($"Set {args[0]} {args[1]} -> {idx}", LogLevel.Info);
-                    updateCompTxForQId(ruleAtlas.QualifiedItemId);
-                }
-            }
-        }
-    }
-    #endregion
+    private void ConsoleDiscoPickUI(string arg1, string[] arg2) => OpenPickUI();
 }

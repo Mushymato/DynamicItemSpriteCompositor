@@ -24,7 +24,7 @@ Since the asset name is already your mod id, there's no real need to make the ke
 | ----- | ---- | ------- | ----- |
 | `TypeIdentifier` | string | `"(O)"` | This is the type identifier part of a qualified item id (e.g. `(O)0`). Currently, only `(O)` and `(BC)` are supported. |
 | `LocalItemId` | string | `"0"` | This is the item id part of a qualified item id (e.g. `(O)0`). |
-| `SourceTexture` | string | _null_ | Source texture asset, where your sprites are on. This must be loaded. |
+| `SourceTextures` | List<string> | _null_ | Source texture asset, where your sprites are on. You can give multiple source texture options here, and DISCO will allow players to choose which option they want to use via in-game configuration menu. Comma separated strings are accepted, which also mean you can put content patcher tokens here too. |
 | `SourceSpritePerIndex` | uint | _null_ | This is used to set your expected sprite per index for the given source texture, must be 1 or greater. See [this section](#sprite-per-index) for more details. |
 | `Rules` | List<**SpriteIndexRule**> | List of rules used to pick dynamic sprite index. |
 
@@ -33,7 +33,7 @@ Since the asset name is already your mod id, there's no real need to make the ke
 | Field | Type | Default | Notes |
 | ----- | ---- | ------- | ----- |
 | `RequiredContextTags` | List<string> | _null_ | List of context tags needed, item must have every tag in the list. Inverse tags that start with `!` is also allowed. You can use comma separated list of context tags. |
-| `RequiredColor` | Color | _null_ | This is used for flavored items (ColoredObject) which have a color. You can pass colors in as hex (`#123123`), RGBA (`30 60 90`), see [this page](./colortags.md) for list of vanilla colors. For non flavored items, use the color tags in `RequiredContextTags` instead. |
+| `RequiredColor` | Color | _null_ | This is used for colored objects such as wine/jelly/pickle which have a color. You can pass colors in as hex (`#123123`), RGBA (`30 60 90`), named monogame colors, and context tags listed on [this page](./colortags.md). Not all flavored items are colored items, for example flavored honey is not colored in vanilla and needs to be checked by `RequiredContextTags` on `Preserve` instead. |
 | `RequiredCondition` | string ([Game State Query](https://stardewvalleywiki.com/Modding:Game_state_queries)) | _null_ | Game state query that the item must fulfill. Item is passed in as the `Target` item. |
 
 ### SpriteIndexRule

@@ -105,11 +105,21 @@ internal sealed class ItemSpriteManager
         }
     }
 
-    internal void UpdateCompTxForQId(string qualifiedItemId)
+    internal void UpdateCompTxForQId(string qualifiedItemId, bool enabledStatusChanged)
     {
         if (TryGetItemSpriteCompForQualifiedItemId(qualifiedItemId, out ItemSpriteComp? itemSpriteComp))
         {
             itemSpriteComp.UpdateCompTx();
+            if (enabledStatusChanged)
+            {
+                foreach ((Item item, _) in watchedItems)
+                {
+                    if (item.QualifiedItemId == qualifiedItemId)
+                    {
+                        ApplyDynamicSpriteIndex(item, itemSpriteComp: itemSpriteComp);
+                    }
+                }
+            }
         }
     }
 

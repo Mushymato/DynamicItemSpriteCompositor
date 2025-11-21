@@ -30,12 +30,12 @@
           "TypeIdentifier": "(O)",
           "LocalItemId": "344",
           "ConfigName": "[LocalizedText Strings\\Objects:Jelly_Name]",
-          "ConfigIconSpriteIndex": 7,
+          "ConfigIconSpriteIndex": 1,
           "SourceTextures": "Jelly/Label/Checkerd Pattern Lid/Brown Lid/Green Cactus_{{ModId}},Jelly/Label/Checkerd Pattern Lid/Cool White Lid/Green Cactus_{{ModId}},Jelly/Label/Checkerd Pattern Lid/Navy Lid/Green Cactus_{{ModId}},Jelly/Label/Checkerd Pattern Lid/Off White Lid/Green Cactus_{{ModId}},Jelly/Label/Checkerd Pattern Lid/Orange Lid/Green Cactus_{{ModId}},Jelly/Label/Checkerd Pattern Lid/Warm White Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Brown Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Cool White Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Navy Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Off White Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Orange Lid/Green Cactus_{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Warm White Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Brown Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Cool White Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Navy Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Off White Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Orange Lid/Green Cactus_{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Warm White Lid/{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Warm White Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Brown Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Cool White Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Navy Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Off White Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Orange Lid/Green Cactus_{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Warm White Lid/Green Cactus_{{ModId}}",
           "SourceSpritePerIndex": 1,
           "Rules": [
             {
-              "RequiredColor": "Cyan",
+              "RequiredColor": "color_cyan",
               "SpriteIndexList": 0
             },
             {
@@ -46,7 +46,7 @@
               "Preserve": {
                 "RequiredContextTags": "season_spring"
               },
-              "RequiredColor": "255 128 0",
+              "RequiredColor": "color_orange",
               "SpriteIndexList": 2
             },
             {
@@ -54,11 +54,11 @@
               "SpriteIndexList": 3
             },
             {
-              "RequiredColor": "DarkBlue",
+              "RequiredColor": "color_dark_blue",
               "SpriteIndexList": 4
             },
             {
-              "RequiredColor": "46 85 183",
+              "RequiredColor": "color_blue",
               "SpriteIndexList": 5
             },
             {
@@ -66,7 +66,7 @@
               "SpriteIndexList": 6
             },
             {
-              "RequiredColor": "220 0 0",
+              "RequiredColor": "color_red",
               "SpriteIndexList": 7
             },
             {
@@ -77,25 +77,25 @@
               "Preserve": {
                 "RequiredContextTags": "dye_strong"
               },
-              "RequiredColor": "220 0 0",
+              "RequiredColor": "color_red",
               "SpriteIndexList": 9
             },
             {
               "Preserve": {
                 "RequiredContextTags": "season_winter"
               },
-              "RequiredColor": "46 85 183",
+              "RequiredColor": "color_blue",
               "SpriteIndexList": 10
             },
             {
-              "RequiredColor": "115 41 181",
+              "RequiredColor": "color_purple",
               "SpriteIndexList": 11
             },
             {
               "Preserve": {
                 "RequiredContextTags": "dye_medium"
               },
-              "RequiredColor": "220 0 0",
+              "RequiredColor": "color_red",
               "SpriteIndexList": 12
             },
             {
@@ -107,19 +107,19 @@
               "SpriteIndexList": 14
             },
             {
-              "RequiredColor": "255 128 0",
+              "RequiredColor": "color_orange",
               "SpriteIndexList": 15
             },
             {
-              "RequiredColor": "255 163 186",
+              "RequiredColor": "color_pink",
               "SpriteIndexList": 16
             },
             {
-              "RequiredColor": "255 230 0",
+              "RequiredColor": "color_yellow",
               "SpriteIndexList": 17
             },
             {
-              "RequiredColor": "DeepPink",
+              "RequiredColor": "color_dark_pink",
               "SpriteIndexList": 18
             },
             {
@@ -151,7 +151,7 @@
               "SpriteIndexList": 25
             },
             {
-              "RequiredColor": "DarkViolet",
+              "RequiredColor": "color_dark_purple",
               "SpriteIndexList": 26
             },
           ]

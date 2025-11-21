@@ -428,7 +428,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         List<SpriteIndexRule> validRules = [];
         foreach (ItemSpriteRuleAtlas spriteAtlas in this.spriteRuleAtlasList)
         {
-            if (spriteAtlas.SourceModAsset == null)
+            if (spriteAtlas.SourceModAsset == null || !spriteAtlas.Enabled)
             {
                 continue;
             }

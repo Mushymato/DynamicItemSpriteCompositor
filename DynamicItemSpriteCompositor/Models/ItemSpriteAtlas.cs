@@ -22,4 +22,5 @@ public sealed class ItemSpriteRuleAtlas
     internal List<SourceTextureOption> SourceTextureOptions { get; set; } = [];
     internal int ChosenIdx { get; set; } = 0;
     internal SourceTextureOption ChosenSourceTexture => SourceTextureOptions[ChosenIdx];
+    internal bool Enabled { get; set; } = true;
 }

@@ -21,23 +21,23 @@
           "SourceSpritePerIndex": 1,
           "Rules": [
             {
-              "RequiredColor": "255 128 0",
+              "RequiredColor": "color_orange",
               "SpriteIndexList": 0
             },
             {
-              "RequiredColor": "SaddleBrown",
+              "RequiredColor": "color_dark_brown",
               "SpriteIndexList": 1
             },
             {
-              "RequiredColor": "DeepPink",
+              "RequiredColor": "color_dark_pink",
               "SpriteIndexList": 2
             },
             {
-              "RequiredColor": "130 73 37",
+              "RequiredColor": "color_brown",
               "SpriteIndexList": 3
             },
             {
-              "RequiredColor": "115 41 181",
+              "RequiredColor": "color_purple",
               "SpriteIndexList": 4
             },
           ]

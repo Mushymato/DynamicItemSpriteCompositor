@@ -4,7 +4,7 @@
   "Changes": [
     {
       "Action": "Load",
-      "Target": "{{ModId}}/jars, {{ModId}}/jars_noclr, {{ModId}}/keggy",
+      "Target": "{{ModId}}/jars, {{ModId}}/jars_noclr, {{ModId}}/keggy, {{ModId}}/keggy_inv",
       "FromFile": "assets/{{TargetWithoutPath}}.png"
     },
     {
@@ -14,14 +14,14 @@
         "Juicey": {
           "TypeIdentifier": "(O)",
           "LocalItemId": "350",
-          "SourceTextureList": "{{ModId}}/jars",
+          "SourceTextures": "{{ModId}}/jars",
           "Rules": [
             {
-              "RequiredColor": "255 128 0",
+              "RequiredColor": "color_orange",
               "SpriteIndexList": 0
             },
             {
-              "RequiredColor": "255 230 0",
+              "RequiredColor": "color_yellow",
               "SpriteIndexList": 2
             }
           ]
@@ -30,18 +30,18 @@
           "TypeIdentifier": "(O)",
           "LocalItemId": "350",
           "SourceSpritePerIndex": 1,
-          "SourceTextureList": "{{ModId}}/jars_noclr",
+          "SourceTextures": "{{ModId}}/jars_noclr",
           "Rules": [
             {
-              "RequiredColor": "255 128 0",
+              "RequiredColor": "color_orange",
               "SpriteIndexList": 0
             },
             {
-              "RequiredColor": "255 230 0",
+              "RequiredColor": "color_yellow",
               "SpriteIndexList": 1
             },
             {
-              "RequiredColor": "10 143 0",
+              "RequiredColor": "color_green",
               "SpriteIndexList": 2
             }
           ]
@@ -50,7 +50,7 @@
           "TypeIdentifier": "(O)",
           "LocalItemId": "348",
           "SourceSpritePerIndex": 1,
-          "SourceTextureList": "{{ModId}}/jars_noclr",
+          "SourceTextures": "{{ModId}}/jars_noclr",
           "Rules": [
             {
               "RequiredContextTags": "quality_silver",
@@ -61,7 +61,7 @@
         "Keggy": {
           "TypeIdentifier": "(BC)",
           "LocalItemId": "12",
-          "SourceTextureList": "{{ModId}}/keggy",
+          "SourceTextures": "{{ModId}}/keggy,{{ModId}}/keggy_inv",
           "Rules": [
             {
               "SpriteIndexList": "0,1,2",
