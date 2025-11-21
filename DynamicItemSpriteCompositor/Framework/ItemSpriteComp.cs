@@ -60,7 +60,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
                     {
                         this.spritePerIndex = spi;
                     }
-                    else if (bcData.Name.Contains("Seasonal"))
+                    else if (bcData.Name?.Contains("Seasonal") ?? false)
                     {
                         // TODO: this actually has more funny % 4 logic to it, not gonna deal with it for now
                         this.spritePerIndex = Math.Max(spritePerIndex, 4);
