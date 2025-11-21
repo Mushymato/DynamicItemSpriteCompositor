@@ -1,3 +1,4 @@
+using DynamicItemSpriteCompositor.Framework;
 using Microsoft.Xna.Framework;
 using Newtonsoft.Json;
 using StardewValley;
@@ -49,11 +50,8 @@ public sealed class SpriteIndexRule : SpriteIndexReqs
     {
         get
         {
-            if (precedence == null)
-            {
-                precedence =
-                    100 + PrecedenceMod + ((HeldObject?.PrecedenceMod ?? 0) / 10) + (Preserve?.PrecedenceMod ?? 0) / 5;
-            }
+            precedence ??=
+                100 + PrecedenceMod + ((HeldObject?.PrecedenceMod ?? 0) / 10) + (Preserve?.PrecedenceMod ?? 0) / 5;
             return precedence.Value;
         }
         set => precedence = value;
@@ -102,7 +100,7 @@ public sealed class SpriteIndexRule : SpriteIndexReqs
             if (
                 (preserveObj ?? item) is not SObject obj
                 || obj.preservedParentSheetIndex.Value is not string preserveQId
-                || ItemRegistry.Create(preserveQId, allowNull: true) is not Item preserveItem
+                || SampleObjectCache.GetObject(preserveQId) is not SObject preserveItem
             )
             {
                 return false;

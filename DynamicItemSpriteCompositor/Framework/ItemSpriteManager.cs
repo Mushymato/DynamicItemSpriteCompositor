@@ -243,8 +243,14 @@ internal sealed class ItemSpriteManager
             if (name.IsEquivalentTo("Data/Objects"))
             {
                 dataObjectInvalidated = true;
+                SampleObjectCache.Invalidate();
             }
-            if (name.IsEquivalentTo("Data/BigCraftables") || name.IsEquivalentTo("Data/Machines"))
+            else if (name.IsEquivalentTo("Data/BigCraftables"))
+            {
+                dataBigCraftablesInvalidated = true;
+                SampleObjectCache.Invalidate();
+            }
+            else if (name.IsEquivalentTo("Data/Machines"))
             {
                 dataBigCraftablesInvalidated = true;
             }

@@ -1,7 +1,9 @@
 global using SObject = StardewValley.Object;
 using System.Diagnostics;
 using DynamicItemSpriteCompositor.Framework;
+using DynamicItemSpriteCompositor.Integration;
 using StardewModdingAPI;
+using StardewModdingAPI.Events;
 
 namespace DynamicItemSpriteCompositor;
 
@@ -16,11 +18,30 @@ public sealed class ModEntry : Mod
     public const string ModId = "mushymato.DISCO";
     private static IMonitor? mon;
     internal static ItemSpriteManager manager = null!;
+    internal static ModConfigHelper config = null!;
+
+    internal static IExtraMachineConfigApi? EMC = null;
 
     public override void Entry(IModHelper helper)
     {
         mon = Monitor;
+        config = new(helper);
         manager = new(helper);
+
+        helper.Events.GameLoop.GameLaunched += OnGameLaunched;
+    }
+
+    private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
+    {
+        try
+        {
+            EMC = Helper.ModRegistry.GetApi<IExtraMachineConfigApi>("selph.ExtraMachineConfig");
+        }
+        catch (Exception ex)
+        {
+            Log($"Failed to get 'selph.ExtraMachineConfig' API:\n{ex}", LogLevel.Warn);
+            EMC = null;
+        }
     }
 
     /// <summary>SMAPI static monitor Log wrapper</summary>

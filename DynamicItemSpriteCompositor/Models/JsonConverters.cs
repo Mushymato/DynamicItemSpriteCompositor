@@ -72,7 +72,11 @@ public sealed class StringColorConverter : JsonConverter
         if (token.Type == JTokenType.String)
         {
             string? tokenValue = token.ToObject<string>();
-            return ContextTagToColor(tokenValue) ?? Utility.StringToColor(tokenValue);
+            if (tokenValue == null)
+                return null;
+            return ContextTagToColor(tokenValue)
+                ?? Utility.StringToColor(tokenValue)
+                ?? ModEntry.EMC?.GetColorOverride(tokenValue);
         }
         return null;
     }
