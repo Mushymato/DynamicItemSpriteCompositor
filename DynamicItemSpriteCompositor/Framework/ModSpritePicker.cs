@@ -624,7 +624,7 @@ internal sealed class ModSpritePicker : IClickableMenu
             AtlasPickDisplayInfo atlasPickDisplay = new(
                 parsedItemData.GetTexture(),
                 parsedItemData.GetSourceRect(),
-                TokenParser.ParseText(ruleAtlas.ConfigName) ?? $"{parsedItemData.DisplayName}({key})",
+                TokenParser.ParseText(ruleAtlas.ConfigName) ?? parsedItemData.DisplayName,
                 displayIdx,
                 ruleAtlas,
                 helper.GameContent,

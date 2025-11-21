@@ -242,11 +242,9 @@ public class SourceTexturesConverter : StringSetConverter
     {
         if (values == null)
             return null;
-        HashSet<string> valueSet = values.ToHashSet();
-        valueSet.Remove(string.Empty);
-        valueSet.Remove(null!);
-        if (valueSet.Any())
-            return valueSet.ToList();
+        IEnumerable<string> valueDistinct = values.Distinct().Where(value => !string.IsNullOrEmpty(value));
+        if (valueDistinct.Any())
+            return valueDistinct.ToList();
         return null;
     }
 }

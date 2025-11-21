@@ -4,13 +4,13 @@
   "ConfigSchema": {
     "CactusColor": {
       "AllowValues": "Green,Red",
-      "Default": "Green"
+      "Default": "Red"
     }
   },
   "Changes": [
     {
       "Action": "Include",
-      "FromFile": "data/DriedMushrooms.json,data/Honey.json,data/Jelly.json"
+      "FromFile": "data/DriedMushrooms.json,data/Honey.json,data/Jelly.json,data/Juice.json,data/Pickles.json,data/Wine.json"
     }
   ]
 }

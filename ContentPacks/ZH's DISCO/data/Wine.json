@@ -1,0 +1,163 @@
+{
+  "$schema": "https://smapi.io/schemas/content-patcher.json",
+  "Changes": [
+    // Load textures
+    {
+      "Action": "Load",
+      "Target": "Wine/{{ModId}}",
+      "FromFile": "All_Assets/{{TargetPathOnly}}/Green Cactus/Wine.png",
+      "Priority": "Low"
+    },
+    {
+      "Action": "Load",
+      "Target": "Wine/{{ModId}}",
+      "FromFile": "All_Assets/{{TargetPathOnly}}/Red Cactus/Wine.png",
+      "Priority": "Medium",
+      "When": {
+        "CactusColor": "Red"
+      }
+    },
+    /*
+    Renamed 'Red_Cactus' to 'Red Cactus' in these folder names for consistency
+    - Jelly/Label/Checkerd Pattern Lid/Brown Lid/Red_Cactus
+    - Jelly/No Label/Checkererd Pattern Lid/Brown Lid/Red_Cactus
+    - Jelly/No Label/Checkererd Pattern Lid/Cool White Lid/Red_Cactus
+    */
+    // DriedMushrooms
+    {
+      "Action": "EditData",
+      "Target": "mushymato.DISCO/Data/{{ModId}}",
+      "Entries": {
+        "Wine": {
+          "TypeIdentifier": "(O)",
+          "LocalItemId": "348",
+          "ConfigIconSpriteIndex": 1,
+          "SourceTextures": "Wine/{{ModId}}",
+          "SourceSpritePerIndex": 1,
+          "Rules": [
+            {
+              "RequiredColor": "color_cyan",
+              "SpriteIndexList": 0
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_613",
+              "SpriteIndexList": 1
+            },
+            {
+              "Preserve": {
+                "RequiredContextTags": "season_spring"
+              },
+              "RequiredColor": "color_orange",
+              "SpriteIndexList": 2
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_91",
+              "SpriteIndexList": 3
+            },
+            {
+              "RequiredColor": "color_dark_blue",
+              "SpriteIndexList": 4
+            },
+            {
+              "RequiredColor": "color_blue",
+              "SpriteIndexList": 5
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_90",
+              "SpriteIndexList": 6
+            },
+            {
+              "RequiredColor": "color_red",
+              "SpriteIndexList": 7
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_88",
+              "SpriteIndexList": 8
+            },
+            {
+              "Preserve": {
+                "RequiredContextTags": "dye_strong"
+              },
+              "RequiredColor": "color_red",
+              "SpriteIndexList": 9
+            },
+            {
+              "Preserve": {
+                "RequiredContextTags": "season_winter"
+              },
+              "RequiredColor": "color_blue",
+              "SpriteIndexList": 10
+            },
+            {
+              "RequiredColor": "color_purple",
+              "SpriteIndexList": 11
+            },
+            {
+              "Preserve": {
+                "RequiredContextTags": "dye_medium"
+              },
+              "RequiredColor": "color_red",
+              "SpriteIndexList": 12
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_834",
+              "SpriteIndexList": 13
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_254",
+              "SpriteIndexList": 14
+            },
+            {
+              "RequiredColor": "color_orange",
+              "SpriteIndexList": 15
+            },
+            {
+              "RequiredColor": "color_pink",
+              "SpriteIndexList": 16
+            },
+            {
+              "RequiredColor": "color_yellow",
+              "SpriteIndexList": 17
+            },
+            {
+              "RequiredColor": "color_dark_pink",
+              "SpriteIndexList": 18
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_Powdermelon",
+              "SpriteIndexList": 19
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_889",
+              "SpriteIndexList": 20
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_252",
+              "SpriteIndexList": 21
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_296",
+              "SpriteIndexList": 22
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_396",
+              "SpriteIndexList": 23
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_268",
+              "SpriteIndexList": 24
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_400",
+              "SpriteIndexList": 25
+            },
+            {
+              "RequiredColor": "color_dark_purple",
+              "SpriteIndexList": 26
+            },
+          ]
+        }
+      }
+    }
+  ]
+}

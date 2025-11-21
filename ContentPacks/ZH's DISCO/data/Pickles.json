@@ -1,0 +1,134 @@
+{
+  "$schema": "https://smapi.io/schemas/content-patcher.json",
+  "Changes": [
+    // Load textures
+    {
+      "Action": "Load",
+      "Target": "Pickles/Checkered Pattern Lid/Off White Lid/{{ModId}},Pickles/Checkered Pattern Lid/Brown Lid/{{ModId}},Pickles/Checkered Pattern Lid/Cool White Lid/{{ModId}},Pickles/Checkered Pattern Lid/Navy Lid/{{ModId}},Pickles/Checkered Pattern Lid/Orange Lid/{{ModId}},Pickles/Checkered Pattern Lid/Warm White Lid/{{ModId}},Pickles/No Checkered Pattern Lid/Brown Lid/{{ModId}},Pickles/No Checkered Pattern Lid/Cool White Lid/{{ModId}},Pickles/No Checkered Pattern Lid/Navy Lid/{{ModId}},Pickles/No Checkered Pattern Lid/Off White Lid/{{ModId}},Pickles/No Checkered Pattern Lid/Orange Lid/{{ModId}},Pickles/No Checkered Pattern Lid/Warm White Lid/{{ModId}}",
+      "FromFile": "All_Assets/{{TargetPathOnly}}/Pickles.png"
+    },
+    // DriedMushrooms
+    {
+      "Action": "EditData",
+      "Target": "mushymato.DISCO/Data/{{ModId}}",
+      "Entries": {
+        "Pickles": {
+          "TypeIdentifier": "(O)",
+          "LocalItemId": "342",
+          "ConfigIconSpriteIndex": 0,
+          "SourceTextures": "Pickles/Checkered Pattern Lid/Off White Lid/{{ModId}},Pickles/Checkered Pattern Lid/Brown Lid/{{ModId}},Pickles/Checkered Pattern Lid/Cool White Lid/{{ModId}},Pickles/Checkered Pattern Lid/Navy Lid/{{ModId}},Pickles/Checkered Pattern Lid/Orange Lid/{{ModId}},Pickles/Checkered Pattern Lid/Warm White Lid/{{ModId}},Pickles/No Checkered Pattern Lid/Brown Lid/{{ModId}},Pickles/No Checkered Pattern Lid/Cool White Lid/{{ModId}},Pickles/No Checkered Pattern Lid/Navy Lid/{{ModId}},Pickles/No Checkered Pattern Lid/Off White Lid/{{ModId}},Pickles/No Checkered Pattern Lid/Orange Lid/{{ModId}},Pickles/No Checkered Pattern Lid/Warm White Lid/{{ModId}}",
+          "SourceSpritePerIndex": 1,
+          "Rules": [
+            {
+              "RequiredColor": "color_pale_violet_red",
+              "SpriteIndexList": 0
+            },
+            {
+              "RequiredColor": "color_green",
+              "SpriteIndexList": 1
+            },
+            {
+              "RequiredColor": "color_dark_purple",
+              "SpriteIndexList": 2
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_278",
+              "SpriteIndexList": 3
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_Broccoli",
+              "SpriteIndexList": 4
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_Carrot",
+              "SpriteIndexList": 5
+            },
+            {
+              "RequiredColor": "color_white",
+              "SpriteIndexList": 6
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_270",
+              "SpriteIndexList": 7
+            },
+            {
+              "RequiredColor": "color_purple",
+              "SpriteIndexList": 8
+            },
+            {
+              "Preserve": {
+                "RequiredContextTags": "dye_strong"
+              },
+              "RequiredColor": "color_green",
+              "SpriteIndexList": 9
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_248",
+              "SpriteIndexList": 10
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_188",
+              "SpriteIndexList": 11
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_304",
+              "SpriteIndexList": 12
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_250",
+              "SpriteIndexList": 13
+            },
+            {
+              "RequiredColor": "color_yellow",
+              "SpriteIndexList": 14
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_192",
+              "SpriteIndexList": 15
+            },
+            {
+              "RequiredColor": "color_orange",
+              "SpriteIndexList": 16
+            },
+            {
+              "RequiredColor": "color_red",
+              "SpriteIndexList": 17
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_266",
+              "SpriteIndexList": 18
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_SummerSquash",
+              "SpriteIndexList": 19
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_830",
+              "SpriteIndexList": 20
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_815",
+              "SpriteIndexList": 21
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_256",
+              "SpriteIndexList": 22
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_271",
+              "SpriteIndexList": 23
+            },
+            {
+              "RequiredContextTags": "preserve_sheet_index_262",
+              "SpriteIndexList": 24
+            },
+            {
+              "RequiredColor": "color_brown",
+              "SpriteIndexList": 25
+            },
+          ]
+        }
+      }
+    }
+  ]
+}
