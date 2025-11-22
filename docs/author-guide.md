@@ -61,8 +61,8 @@ When an item pass all requirements on a single **SpriteIndexRule**, it will get 
 When an item pass all requirements on multiple **SpriteIndexRule** entries, only the **SpriteIndexRule** with lowest `Precedence` out of the matching rules are considered. The sprite index is picked with equal chance from all matching rules combined.
 
 The sprite indexes are force rechecked in 2 situations:
-- New day started
-- Relevant assets invalidated
+- Save loaded (all items in the world will be rechecked)
+- Relevant assets invalidated (relevant watched items will be rechecked)
 
 To debug any unexpected behavior, use console command `disco-export` to save the combined **ItemSpriteRuleAtlas** data and the special composite texture to DISCO's mod folder.
 

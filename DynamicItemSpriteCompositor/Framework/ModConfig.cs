@@ -1,14 +1,12 @@
 using DynamicItemSpriteCompositor.Integration;
 using DynamicItemSpriteCompositor.Models;
 using StardewModdingAPI;
-using StardewValley;
-using StardewValley.Menus;
 
 namespace DynamicItemSpriteCompositor.Framework;
 
 public sealed record TextureOption(bool Enabled, string Texture);
 
-public sealed class ModConfigData
+public class ModConfigData
 {
     // ModId -> Key -> Texture
     public Dictionary<string, Dictionary<string, TextureOption>> ContentPackTextureOptions = [];
@@ -16,7 +14,11 @@ public sealed class ModConfigData
 
 public sealed class ModConfigHelper(IModHelper helper, IManifest mod)
 {
-    public ModConfigData Data = helper.ReadConfig<ModConfigData>();
+    public ModConfigData Data
+    {
+        get => field ??= helper.ReadConfig<ModConfigData>();
+        set => field = value;
+    } = null;
 
     internal void SetupGMCM(ModSpritePicker picker)
     {

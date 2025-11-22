@@ -247,7 +247,6 @@ internal sealed class ModSpritePicker : IClickableMenu
     {
         this.helper = helper;
         this.modDataHolders = modDataAssets.Values.ToList();
-        ModEntry.config.LoadContentPackTextureOptions(this.modDataHolders);
         this.updateForQId = updateForQId;
 
         Mod_L.BaseX = 0;
@@ -733,6 +732,7 @@ internal sealed class ModSpritePicker : IClickableMenu
     {
         if (CurrentMod == null)
         {
+            ModEntry.config.LoadContentPackTextureOptions(this.modDataHolders);
             NextMod();
         }
 

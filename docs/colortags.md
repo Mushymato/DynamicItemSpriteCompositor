@@ -2,7 +2,7 @@
 
 These are colors assigned by game depending on the preserve item's context tags, though mods could potentially add more colors.
 
-Vanilla context tag to color conversions are hardcoded in DISCO, so you can directly use `color_black` in the [`RequiredColor`](./author-guide.md#SpriteIndexRule) field. Literal color is still useful for edge cases.
+Vanilla context tag to color conversions are hardcoded in DISCO, so you can directly use `color_black` in the [`RequiredColor`](./author-guide.md#SpriteIndexRule) field. Literal color is still useful for edge cases, but in those cases consider using `"RequiredContextTags": "preserve_sheet_index_<flavour item id>"`.
 
 | Tag | Color |
 | --- | ----- |
