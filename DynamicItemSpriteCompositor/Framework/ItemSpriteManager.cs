@@ -69,6 +69,11 @@ internal sealed class ItemSpriteManager
         this.helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
         this.helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
 
+#if !MP_DESYNC
+        this.helper.Events.GameLoop.Saving += OnSaving;
+        this.helper.Events.GameLoop.Saved += OnSaved;
+#endif
+
         helper.ConsoleCommands.Add(
             "disco-export",
             "Export the current composite sprites and rule atlas info.",
@@ -357,6 +362,7 @@ internal sealed class ItemSpriteManager
         return false;
     }
 
+#if MP_DESYNC
     internal bool SetSpriteIndex(Item item, int newSpriteIndex)
     {
         if (watchedItems.TryGetValue(item, out ItemSpriteIndexHolder? holder))
@@ -375,6 +381,23 @@ internal sealed class ItemSpriteManager
         }
         return currentSpriteIndex;
     }
+#else
+    private void OnSaving(object? sender, SavingEventArgs e)
+    {
+        foreach ((_, ItemSpriteIndexHolder holder) in watchedItems)
+        {
+            holder.Unapply();
+        }
+    }
+
+    private void OnSaved(object? sender, SavedEventArgs e)
+    {
+        foreach ((_, ItemSpriteIndexHolder holder) in watchedItems)
+        {
+            holder.Reapply();
+        }
+    }
+#endif
 
     internal void FixAdditionalMetadata(ItemMetadata metadata)
     {

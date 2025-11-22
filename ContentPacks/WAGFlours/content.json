@@ -73,7 +73,7 @@
         "Flour": {
           "TypeIdentifier": "(O)",
           "LocalItemId": "246",
-          "SourceTextureList": "{{ModId}}/wagflours",
+          "SourceTextures": "{{ModId}}/wagflours",
           "Rules": [
             {
               "RequiredContextTags": "preserve_sheet_index_270",
@@ -92,7 +92,7 @@
         "Furnacey": {
           "TypeIdentifier": "(BC)",
           "LocalItemId": "156",
-          "SourceTextureList": "{{ModId}}/machines",
+          "SourceTextures": "{{ModId}}/machines",
           "Rules": [
             {
               "SpriteIndexList": "0,2",
@@ -103,7 +103,7 @@
         "PerThing": {
           "TypeIdentifier": "(BC)",
           "LocalItemId": "Dehydrator",
-          "SourceTextureList": "{{ModId}}/machines",
+          "SourceTextures": "{{ModId}}/machines",
           "Rules": [
             {
               "HeldObject": {
