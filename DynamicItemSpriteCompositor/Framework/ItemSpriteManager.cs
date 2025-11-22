@@ -21,7 +21,7 @@ internal sealed class ItemSpriteManager
     private HashSet<Item> needApplyDynamicSpriteIndex = [];
     private readonly ConditionalWeakTable<Item, ItemSpriteIndexHolder> watchedItems = [];
 
-    private readonly ModSpritePicker spritePicker;
+    internal readonly ModSpritePicker spritePicker;
 
     internal void AddToNeedApplyDynamicSpriteIndex(Item item)
     {
@@ -129,6 +129,14 @@ internal sealed class ItemSpriteManager
         ItemMetadata metadata = ItemRegistry.ResolveMetadata(qualifiedItemId);
         Patches.ItemMetadata_SetTypeDefinition_Postfix_Enabled = true;
         return metadata;
+    }
+
+    internal static string SafeGetQualifiedItemId(Item item)
+    {
+        Patches.ItemMetadata_ParentSheetIndex_Enabled = false;
+        string qualifiedItemId = item.QualifiedItemId;
+        Patches.ItemMetadata_ParentSheetIndex_Enabled = true;
+        return qualifiedItemId;
     }
 
     private bool TryGetItemSpriteCompForQualifiedItemId(
@@ -409,7 +417,7 @@ internal sealed class ItemSpriteManager
         {
             return holder.SpriteIndex;
         }
-        if (qIdToComp.TryGetValue(item.QualifiedItemId, out ItemSpriteComp? itemSpriteComp))
+        if (qIdToComp.TryGetValue(SafeGetQualifiedItemId(item), out ItemSpriteComp? itemSpriteComp))
         {
             ApplyDynamicSpriteIndex(item, resetSpriteIndex: true, itemSpriteComp: itemSpriteComp);
         }

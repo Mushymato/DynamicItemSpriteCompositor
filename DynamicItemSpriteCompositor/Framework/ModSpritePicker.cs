@@ -1,4 +1,3 @@
-using System.Text;
 using DynamicItemSpriteCompositor.Models;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -18,11 +17,11 @@ internal record DisplayInfo(Texture2D Icon, Rectangle IconSourceRect, string Lab
     internal int XOffset = (int)((64 - IconSourceRect.Width * (64f / IconSourceRect.Height)) / 2);
     internal bool Chosen { get; set; } = false;
 
-    internal void DrawIcon(SpriteBatch b, Rectangle bounds)
+    internal void DrawIcon(SpriteBatch b, Rectangle bounds, int PaddingX, int PaddingY)
     {
         b.Draw(
             Icon,
-            new(bounds.X + ModSpritePicker.PADDING + XOffset, bounds.Y + ModSpritePicker.PADDING),
+            new(bounds.X + PaddingX + ModSpritePicker.PADDING + XOffset, bounds.Y + PaddingY + ModSpritePicker.PADDING),
             IconSourceRect,
             Color.White,
             0,
@@ -75,6 +74,9 @@ internal class RelativeCC(Rectangle bounds, string name) : ClickableComponent(bo
     internal int BaseX { get; set; } = 0;
     internal int BaseY { get; set; } = 0;
 
+    internal int PaddingX { get; set; } = 0;
+    internal int PaddingY { get; set; } = 0;
+
     public void Reposition(int x, int y)
     {
         bounds.X = BaseX + x;
@@ -101,19 +103,22 @@ internal sealed class AtlasPickCC(Rectangle bounds, string name) : RelativeCC(bo
             b,
             Game1.menuTexture,
             MenuRectInset,
-            bounds.X,
-            bounds.Y,
-            bounds.Width,
-            bounds.Height,
+            bounds.X + PaddingX,
+            bounds.Y + PaddingY,
+            bounds.Width - PaddingX,
+            bounds.Height - PaddingY,
             Color.White,
             drawShadow: false
         );
-        aDisplay.DrawIcon(b, bounds);
+        aDisplay.DrawIcon(b, bounds, PaddingX, PaddingY);
         if (aDisplay.IconCurrent != null)
         {
             b.Draw(
                 aDisplay.IconCurrent,
-                new(bounds.X + ModSpritePicker.PADDING * 2 + 64 + aDisplay.XOffset, bounds.Y + ModSpritePicker.PADDING),
+                new(
+                    bounds.X + PaddingX + ModSpritePicker.PADDING * 2 + 64 + aDisplay.XOffset,
+                    bounds.Y + PaddingY + ModSpritePicker.PADDING
+                ),
                 aDisplay.IconCurrentSourceRect,
                 Color.White,
                 0,
@@ -127,7 +132,10 @@ internal sealed class AtlasPickCC(Rectangle bounds, string name) : RelativeCC(bo
             b,
             aDisplay.Label,
             Game1.smallFont,
-            new(bounds.X + (ModSpritePicker.PADDING * 2 + 64) * 2, bounds.Y + ModSpritePicker.PADDING + 12),
+            new(
+                bounds.X + PaddingX + (ModSpritePicker.PADDING * 2 + 64) * 2,
+                bounds.Y + PaddingY + ModSpritePicker.PADDING + 18
+            ),
             Game1.textColor
         );
     }
@@ -146,14 +154,14 @@ internal sealed class TexturePicksCC(Rectangle bounds, string name) : RelativeCC
             b,
             Game1.menuTexture,
             display.Chosen ? MenuRectInset : MenuRectRaised,
-            bounds.X,
-            bounds.Y,
-            bounds.Width,
-            bounds.Height,
+            bounds.X + PaddingX,
+            bounds.Y + PaddingY,
+            bounds.Width - PaddingX,
+            bounds.Height - PaddingY,
             Color.White,
             drawShadow: false
         );
-        display.DrawIcon(b, bounds);
+        display.DrawIcon(b, bounds, PaddingX, PaddingY);
     }
 }
 
@@ -197,7 +205,7 @@ internal sealed class ModSpritePicker : IClickableMenu
     private readonly IModHelper helper;
     private readonly Action<string, bool> updateForQId;
 
-    private readonly List<ModProidedDataHolder> modDataHolders;
+    internal readonly List<ModProidedDataHolder> modDataHolders;
     private int CurrentModIdx
     {
         get => field;
@@ -232,8 +240,8 @@ internal sealed class ModSpritePicker : IClickableMenu
         : base(
             Game1.viewport.X + 96,
             Game1.viewport.Y + 96,
-            (64 + PADDING * 3) * TEXTURE_COL_CNT + MARGIN * 2,
-            (64 + PADDING * 3) * ATLAS_ROW_CNT + MARGIN * 2,
+            (64 + PADDING * 3) * TEXTURE_COL_CNT + MARGIN * 2 + PADDING,
+            (64 + PADDING * 3) * TEXTURE_ROW_CNT + MARGIN * 2,
             showUpperRightCloseButton: false
         )
     {
@@ -247,8 +255,8 @@ internal sealed class ModSpritePicker : IClickableMenu
         Mod_R.BaseX = width - 64;
         Mod_R.BaseY = -64 - PADDING;
 
-        int cellWidth = width / 2 - MARGIN - PADDING / 4;
-        int cellHeight = (height - MARGIN * 2) / 6;
+        int cellWidth = (64 + PADDING * 3) * TEXTURE_COL_CNT / 2;
+        int cellHeight = 64 + PADDING * 3;
         int myID = 0;
         int row = 0;
         int col = 0;
@@ -258,12 +266,13 @@ internal sealed class ModSpritePicker : IClickableMenu
             row = i / ATLAS_COL_CNT;
             col = i % ATLAS_COL_CNT;
             myID = 100 + i;
-            // string name, Rectangle bounds, string label, string hoverText, Texture2D texture, Rectangle sourceRect, float scale, bool drawShadow = false
             AtlasPicks.Add(
                 new AtlasPickCC(new(0, 0, cellWidth, cellHeight), $"AtlasPicks_{i}")
                 {
-                    BaseX = MARGIN + (PADDING / 2 + cellWidth) * col,
-                    BaseY = MARGIN + (PADDING + cellHeight) * row,
+                    BaseX = MARGIN + cellWidth * col,
+                    BaseY = MARGIN + cellHeight * row,
+                    PaddingX = PADDING / 2,
+                    PaddingY = PADDING,
                     myID = myID,
                     upNeighborID = row > 0 ? myID - ATLAS_COL_CNT : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
                     leftNeighborID = col > 0 ? myID - 1 : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
@@ -281,12 +290,13 @@ internal sealed class ModSpritePicker : IClickableMenu
             row = i / TEXTURE_COL_CNT;
             col = i % TEXTURE_COL_CNT;
             myID = 200 + i;
-            // string name, Rectangle bounds, string label, string hoverText, Texture2D texture, Rectangle sourceRect, float scale, bool drawShadow = false
             TexturePicks.Add(
-                new TexturePicksCC(new(0, 0, cellWidth, cellHeight), $"TexturePicks_{i}")
+                new TexturePicksCC(new(0, 0, PADDING + cellWidth, PADDING + cellHeight), $"TexturePicks_{i}")
                 {
                     BaseX = MARGIN + (PADDING + cellWidth) * col,
                     BaseY = MARGIN + (PADDING + cellHeight) * row,
+                    PaddingX = PADDING / 2,
+                    PaddingY = PADDING / 2,
                     myID = myID,
                     upNeighborID = row > 0 ? myID - TEXTURE_COL_CNT : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
                     leftNeighborID = col > 0 ? myID - 1 : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
@@ -301,7 +311,7 @@ internal sealed class ModSpritePicker : IClickableMenu
         helper.ConsoleCommands.Add(
             "disco-pick",
             "Configure which sprite is being used for each content pack.",
-            ConsoleDiscoPickUI
+            ConsolePickUI
         );
     }
 
@@ -717,7 +727,9 @@ internal sealed class ModSpritePicker : IClickableMenu
         base.cleanupBeforeExit();
     }
 
-    private void OpenPickUI()
+    internal void Cleanup() => cleanupBeforeExit();
+
+    private bool PreparePickUI()
     {
         if (CurrentMod == null)
         {
@@ -733,9 +745,34 @@ internal sealed class ModSpritePicker : IClickableMenu
                     populateClickableComponentList();
                 snapToDefaultClickableComponent();
             }
+            return true;
+        }
+        return false;
+    }
+
+    private void ConsolePickUI(string arg1, string[] arg2)
+    {
+        if (PreparePickUI())
+        {
             Game1.activeClickableMenu = this;
         }
     }
 
-    private void ConsoleDiscoPickUI(string arg1, string[] arg2) => OpenPickUI();
+    internal void GMCMPickUI()
+    {
+        if (PreparePickUI())
+        {
+            if (Context.IsWorldReady)
+            {
+                DelayedAction.functionAfterDelay(() => Game1.activeClickableMenu = this, 0);
+                return;
+            }
+
+            if (Game1.activeClickableMenu is TitleMenu titleMenu)
+            {
+                TitleMenu.ReturnToMainTitleScreen();
+                titleMenu.SetChildMenu(this);
+            }
+        }
+    }
 }

@@ -13,6 +13,7 @@ namespace DynamicItemSpriteCompositor.Framework;
 internal static class Patches
 {
     internal static bool ItemMetadata_SetTypeDefinition_Postfix_Enabled { get; set; } = true;
+    internal static bool ItemMetadata_ParentSheetIndex_Enabled { get; set; } = true;
 
     internal static void Register()
     {
@@ -103,12 +104,15 @@ internal static class Patches
 
     private static bool Item_set_ParentSheetIndex_Prefix(Item __instance, int value)
     {
-        return ModEntry.manager.SetSpriteIndex(__instance, value);
+        if (ItemMetadata_ParentSheetIndex_Enabled)
+            return ModEntry.manager.SetSpriteIndex(__instance, value);
+        return true;
     }
 
     private static void Item_get_ParentSheetIndex_Postfix(Item __instance, ref int __result)
     {
-        __result = ModEntry.manager.GetSpriteIndex(__instance, __result);
+        if (ItemMetadata_ParentSheetIndex_Enabled)
+            __result = ModEntry.manager.GetSpriteIndex(__instance, __result);
     }
 
     private static void ItemMetadata_SetTypeDefinition_Postfix(ref ItemMetadata __instance)

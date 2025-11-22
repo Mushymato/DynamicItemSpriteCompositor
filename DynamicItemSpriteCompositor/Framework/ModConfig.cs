@@ -1,5 +1,8 @@
+using DynamicItemSpriteCompositor.Integration;
 using DynamicItemSpriteCompositor.Models;
 using StardewModdingAPI;
+using StardewValley;
+using StardewValley.Menus;
 
 namespace DynamicItemSpriteCompositor.Framework;
 
@@ -11,9 +14,44 @@ public sealed class ModConfigData
     public Dictionary<string, Dictionary<string, TextureOption>> ContentPackTextureOptions = [];
 }
 
-public sealed class ModConfigHelper(IModHelper helper)
+public sealed class ModConfigHelper(IModHelper helper, IManifest mod)
 {
     public ModConfigData Data = helper.ReadConfig<ModConfigData>();
+
+    internal void SetupGMCM(ModSpritePicker picker)
+    {
+        IGenericModConfigMenuApi? gmcm = null;
+        try
+        {
+            gmcm = helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
+        }
+        catch { }
+        if (gmcm == null)
+        {
+            ModEntry.Log(
+                $"Failed to get 'spacechase0.GenericModConfigMenu' API\nYou can still open the config menu for this mod via console command 'disco-pick'",
+                LogLevel.Warn
+            );
+            return;
+        }
+        gmcm.Register(
+            mod,
+            () =>
+            {
+                Data = helper.ReadConfig<ModConfigData>();
+                LoadContentPackTextureOptions(picker.modDataHolders);
+            },
+            () => SaveContentPackTextureOptions(picker.modDataHolders),
+            titleScreenOnly: false
+        );
+        gmcm.AddComplexOption(
+            mod,
+            () => string.Empty,
+            (b, origin) => { },
+            beforeMenuOpened: picker.GMCMPickUI,
+            beforeMenuClosed: picker.Cleanup
+        );
+    }
 
     internal void LoadContentPackTextureOptions(IEnumerable<ModProidedDataHolder> modDataHolders)
     {

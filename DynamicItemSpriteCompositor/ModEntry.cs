@@ -25,7 +25,7 @@ public sealed class ModEntry : Mod
     public override void Entry(IModHelper helper)
     {
         mon = Monitor;
-        config = new(helper);
+        config = new(helper, ModManifest);
         manager = new(helper);
 
         helper.Events.GameLoop.GameLaunched += OnGameLaunched;
@@ -42,6 +42,7 @@ public sealed class ModEntry : Mod
             Log($"Failed to get 'selph.ExtraMachineConfig' API:\n{ex}", LogLevel.Warn);
             EMC = null;
         }
+        config.SetupGMCM(manager.spritePicker);
     }
 
     /// <summary>SMAPI static monitor Log wrapper</summary>
