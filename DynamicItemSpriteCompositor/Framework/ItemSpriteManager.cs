@@ -7,6 +7,7 @@ using StardewValley;
 using StardewValley.Extensions;
 using StardewValley.GameData.BigCraftables;
 using StardewValley.ItemTypeDefinitions;
+using StardewValley.Menus;
 
 namespace DynamicItemSpriteCompositor.Framework;
 

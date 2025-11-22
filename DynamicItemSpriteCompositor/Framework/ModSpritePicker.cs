@@ -361,6 +361,20 @@ internal sealed class ModSpritePicker : IClickableMenu
         {
             return;
         }
+        if (GetParentMenu() is TitleMenu titleMenu)
+        {
+            b.Draw(
+                Game1.mouseCursors,
+                new Rectangle(
+                    0,
+                    (int)(-300 * TitleMenu.pixelZoom - titleMenu.viewportY * 0.66f),
+                    titleMenu.width,
+                    300 * TitleMenu.pixelZoom + titleMenu.height - 120 * TitleMenu.pixelZoom
+                ),
+                new Rectangle(703, 1912, 1, 264),
+                Color.White
+            );
+        }
 
         drawTextureBox(
             b,
@@ -467,6 +481,7 @@ internal sealed class ModSpritePicker : IClickableMenu
         {
             AtlasCurrIdx = -1;
             snapToDefaultClickableComponent();
+            Game1.playSound("bigDeSelect");
             return;
         }
         base.receiveKeyPress(key);
@@ -762,16 +777,29 @@ internal sealed class ModSpritePicker : IClickableMenu
     {
         if (PreparePickUI())
         {
-            if (Context.IsWorldReady)
-            {
-                DelayedAction.functionAfterDelay(() => Game1.activeClickableMenu = this, 0);
-                return;
-            }
-
             if (Game1.activeClickableMenu is TitleMenu titleMenu)
             {
-                TitleMenu.ReturnToMainTitleScreen();
                 titleMenu.SetChildMenu(this);
+            }
+            else
+            {
+                DelayedAction.functionAfterDelay(
+                    () =>
+                    {
+                        if (Game1.activeClickableMenu == null)
+                        {
+                            Game1.activeClickableMenu = this;
+                            return;
+                        }
+                        IClickableMenu menu = Game1.activeClickableMenu;
+                        while (menu.GetChildMenu() != null)
+                            menu = menu.GetChildMenu();
+                        menu.GetParentMenu().SetChildMenu(null);
+                        Game1.nextClickableMenu.Add(Game1.activeClickableMenu);
+                        Game1.activeClickableMenu = this;
+                    },
+                    0
+                );
             }
         }
     }
