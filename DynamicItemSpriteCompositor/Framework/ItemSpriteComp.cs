@@ -453,7 +453,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             }
             if (minPrecedenceRule != null)
             {
-                int randIdx = holder.Rand.Next(
+                int randIdx = Random.Shared.Next(
                     minPrecedenceRule.IncludeDefaultSpriteIndex ? -1 : 0,
                     minPrecedenceRule.ActualSpriteIndexList.Count
                 );

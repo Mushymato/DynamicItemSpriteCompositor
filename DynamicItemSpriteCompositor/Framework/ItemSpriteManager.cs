@@ -68,6 +68,8 @@ internal sealed class ItemSpriteManager
 
         this.helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
         this.helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
+        this.helper.Events.GameLoop.Saving += OnSaving;
+        this.helper.Events.GameLoop.Saved += OnSaved;
 
         helper.ConsoleCommands.Add(
             "disco-export",
@@ -369,17 +371,28 @@ internal sealed class ItemSpriteManager
 
     private void OnReturnedToTitle(object? sender, ReturnedToTitleEventArgs e)
     {
+        needItemSpriteCompRecheck.Clear();
+        needApplyDynamicSpriteIndex.Clear();
         watchedItems.Clear();
         qIdToComp.Clear();
     }
 
-    private void OnSaveLoaded_ModDisabled(object? sender, SaveLoadedEventArgs e)
+    private void OnSaving(object? sender, SavingEventArgs e)
     {
-        Utility.ForEachItem(item =>
+        ItemSpriteIndexHolder.IsSaving = true;
+        int invalid = 0;
+        int total = 0;
+        foreach ((Item item, ItemSpriteIndexHolder holder) in watchedItems)
         {
-            item.ResetParentSheetIndex();
-            return true;
-        });
+            total++;
+            invalid += holder.SetParentSheetIndexToChanged() ? 0 : 1;
+        }
+        ModEntry.Log($"OnSaving Invalid: {invalid}/{total}");
+    }
+
+    private void OnSaved(object? sender, SavedEventArgs e)
+    {
+        ItemSpriteIndexHolder.IsSaving = false;
     }
 
     internal bool ApplyDynamicSpriteIndex(

@@ -1,41 +1,59 @@
+using StardewModdingAPI;
 using StardewValley;
 
 namespace DynamicItemSpriteCompositor.Framework;
 
 #pragma warning disable AvoidNetField // Avoid Netcode types when possible
-internal sealed record ItemSpriteIndexHolder
+internal sealed record ItemSpriteIndexHolder : IDisposable
 {
-    private const string ModData_RandSeed = $"{ModEntry.ModId}/RandSeed";
+    private const int SpecialParentSheetIndex = -395870000;
+    internal static bool IsSaving = false;
+
     private int spriteIndexPicked = 0;
     private int spriteIndexBase = 0;
     private int spriteIndexChanged = 0;
-    internal Random Rand { get; private set; }
 
     internal int SpriteIndex => spriteIndexPicked + spriteIndexChanged - spriteIndexBase;
+    private WeakReference<Item> itemRef;
 
     internal static ItemSpriteIndexHolder Make(Item item) => new(item);
 
     internal ItemSpriteIndexHolder(Item item)
     {
-        if (
-            item.modData.TryGetValue(ModData_RandSeed, out string randSeedStr)
-            && int.TryParse(randSeedStr, out int randSeed)
-        )
+        this.itemRef = new(item);
+        item.parentSheetIndex.fieldChangeVisibleEvent += OnParentSheetIndexChanged;
+    }
+
+    private void OnParentSheetIndexChanged(Netcode.NetInt field, int oldValue, int newValue)
+    {
+        if (IsSaving)
+            return;
+        if (newValue == SpecialParentSheetIndex)
         {
-            Rand = new Random(randSeed);
+            spriteIndexChanged = spriteIndexBase;
+            SetParentSheetIndexToChanged();
         }
-        else
+        else if (oldValue != SpecialParentSheetIndex && oldValue != newValue)
         {
-            randSeed = Random.Shared.Next();
-            Rand = new Random(randSeed);
-            item.modData[ModData_RandSeed] = randSeed.ToString();
+            spriteIndexChanged += newValue - SpriteIndex;
         }
+    }
+
+    internal bool SetParentSheetIndexToChanged()
+    {
+        if (itemRef.TryGetTarget(out Item? item))
+        {
+            item.parentSheetIndex.fieldChangeVisibleEvent -= OnParentSheetIndexChanged;
+            item.parentSheetIndex.Value = spriteIndexChanged;
+            item.parentSheetIndex.fieldChangeVisibleEvent += OnParentSheetIndexChanged;
+            return true;
+        }
+        return false;
     }
 
     internal void Change(Item item, int newSpriteIndex)
     {
         int diff = newSpriteIndex - SpriteIndex;
-        spriteIndexChanged += diff;
         item.parentSheetIndex.Value += diff;
     }
 
@@ -51,10 +69,21 @@ internal sealed record ItemSpriteIndexHolder
             else
             {
                 spriteIndexChanged = baseIndex;
-                item.parentSheetIndex.Value = baseIndex;
+                item.parentSheetIndex.Value = SpecialParentSheetIndex;
             }
         }
         spriteIndexPicked = pickedIndex;
+    }
+
+    ~ItemSpriteIndexHolder() => Dispose();
+
+    public void Dispose()
+    {
+        if (itemRef.TryGetTarget(out Item? item))
+        {
+            item.parentSheetIndex.fieldChangeVisibleEvent -= OnParentSheetIndexChanged;
+            itemRef = null!;
+        }
     }
 }
 #pragma warning restore AvoidNetField // Avoid Netcode types when possible

@@ -36,13 +36,6 @@ internal static class Patches
             );
 
             harmony.Patch(
-                original: AccessTools.PropertySetter(typeof(Item), nameof(Item.ParentSheetIndex)),
-                prefix: new HarmonyMethod(typeof(Patches), nameof(Item_set_ParentSheetIndex_Prefix))
-                {
-                    priority = Priority.Last,
-                }
-            );
-            harmony.Patch(
                 original: AccessTools.PropertyGetter(typeof(Item), nameof(Item.ParentSheetIndex)),
                 postfix: new HarmonyMethod(typeof(Patches), nameof(Item_get_ParentSheetIndex_Postfix))
                 {
@@ -100,13 +93,6 @@ internal static class Patches
     private static void Item_MarkContextTagsDirty_Prefix(Item __instance)
     {
         ModEntry.manager.AddToNeedApplyDynamicSpriteIndexIfWatched(__instance);
-    }
-
-    private static bool Item_set_ParentSheetIndex_Prefix(Item __instance, int value)
-    {
-        if (ItemMetadata_ParentSheetIndex_Enabled)
-            return ModEntry.manager.SetSpriteIndex(__instance, value);
-        return true;
     }
 
     private static void Item_get_ParentSheetIndex_Postfix(Item __instance, ref int __result)
