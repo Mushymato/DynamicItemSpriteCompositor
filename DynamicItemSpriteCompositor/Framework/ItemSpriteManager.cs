@@ -382,11 +382,10 @@ internal sealed class ItemSpriteManager
     {
         if (itemSpriteComp != null || TryGetItemSpriteCompForQualifiedItemId(item.QualifiedItemId, out itemSpriteComp))
         {
-            if (itemSpriteComp.TryApplySpriteIndexFromRules(item, out int? spriteIndex))
+            if (itemSpriteComp.CanApplySpriteIndexFromRules)
             {
-                watchedItems
-                    .GetValue(item, ItemSpriteIndexHolder.Make)
-                    .Apply(item, spriteIndex.Value, itemSpriteComp.baseSpriteIndex, resetSpriteIndex, isSaveLoaded);
+                ItemSpriteIndexHolder holder = watchedItems.GetValue(item, ItemSpriteIndexHolder.Make);
+                itemSpriteComp.DoApplySpriteIndexFromRules(item, holder, resetSpriteIndex, isSaveLoaded);
                 return true;
             }
         }

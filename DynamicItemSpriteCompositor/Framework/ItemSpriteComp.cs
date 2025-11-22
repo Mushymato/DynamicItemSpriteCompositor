@@ -413,20 +413,17 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         return !IsValid;
     }
 
-    internal bool TryApplySpriteIndexFromRules(Item item, [NotNullWhen(true)] out int? spriteIndex)
-    {
-        spriteIndex = null;
-        if (spriteRuleAtlasList == null)
-        {
-            return false;
-        }
-        if (spriteRuleAtlasList.Count == 0)
-        {
-            return false;
-        }
+    internal bool CanApplySpriteIndexFromRules => spriteRuleAtlasList?.Count > 0;
 
+    internal void DoApplySpriteIndexFromRules(
+        Item item,
+        ItemSpriteIndexHolder holder,
+        bool resetSpriteIndex,
+        bool isSaveLoaded
+    )
+    {
         List<SpriteIndexRule> validRules = [];
-        foreach (ItemSpriteRuleAtlas spriteAtlas in this.spriteRuleAtlasList)
+        foreach (ItemSpriteRuleAtlas spriteAtlas in this.spriteRuleAtlasList!)
         {
             if (spriteAtlas.SourceModAsset == null || !spriteAtlas.Enabled)
             {
@@ -441,50 +438,33 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             }
         }
 
-        spriteIndex = 0;
-        if (validRules.Count == 0)
+        int spriteIndex = 0;
+        if (validRules.Count > 0)
         {
-            return true;
-        }
-
-        int minPrecedence = int.MaxValue;
-        SpriteIndexRule? minPrecedenceRule = null;
-        foreach (SpriteIndexRule rule in validRules)
-        {
-            if (rule.Precedence < minPrecedence)
+            int minPrecedence = int.MaxValue;
+            SpriteIndexRule? minPrecedenceRule = null;
+            foreach (SpriteIndexRule rule in validRules)
             {
-                minPrecedence = rule.Precedence;
-                minPrecedenceRule = rule;
+                if (rule.Precedence < minPrecedence)
+                {
+                    minPrecedence = rule.Precedence;
+                    minPrecedenceRule = rule;
+                }
+            }
+            if (minPrecedenceRule != null)
+            {
+                int randIdx = holder.Rand.Next(
+                    minPrecedenceRule.IncludeDefaultSpriteIndex ? -1 : 0,
+                    minPrecedenceRule.ActualSpriteIndexList.Count
+                );
+                if (randIdx >= 0)
+                {
+                    spriteIndex = minPrecedenceRule.ActualSpriteIndexList[randIdx];
+                }
             }
         }
-        if (minPrecedenceRule != null)
-        {
-            int randIdx = Random.Shared.Next(
-                minPrecedenceRule.IncludeDefaultSpriteIndex ? -1 : 0,
-                minPrecedenceRule.ActualSpriteIndexList.Count
-            );
-            if (randIdx >= 0)
-            {
-                spriteIndex = minPrecedenceRule.ActualSpriteIndexList[randIdx];
-            }
-        }
 
-        // int minPrecedence = validRules.Min(rule => rule.Precedence);
-        // HashSet<int> possibleIndicies = [];
-        // foreach (SpriteIndexRule rule in validRules.Where(ruleValidFor => ruleValidFor.Precedence == minPrecedence))
-        // {
-        //     possibleIndicies.AddRange(rule.ActualSpriteIndexList);
-        //     if (rule.IncludeDefaultSpriteIndex)
-        //     {
-        //         possibleIndicies.Add(0);
-        //     }
-        // }
-        // if (possibleIndicies.Count > 0)
-        // {
-        //     spriteIndex = Random.Shared.ChooseFrom(possibleIndicies.ToList());
-        // }
-
-        return true;
+        holder.Apply(item, spriteIndex, baseSpriteIndex, resetSpriteIndex, isSaveLoaded);
     }
 
     /// Based on https://github.com/Pathoschild/StardewMods/blob/95d695b205199de4bad86770d69a30806d1721a2/ContentPatcher/Framework/Commands/Commands/ExportCommand.cs
