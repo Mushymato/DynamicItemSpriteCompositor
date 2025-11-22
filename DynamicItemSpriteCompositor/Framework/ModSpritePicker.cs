@@ -648,12 +648,6 @@ internal sealed class ModSpritePicker : IClickableMenu
         TexturePicksDisplayAll.Clear();
     }
 
-    private bool HasDisplayData(ModProidedDataHolder holder)
-    {
-        return holder.TryGetModRuleAtlas(helper.GameContent, out Dictionary<string, ItemSpriteRuleAtlas>? modRuleAtlas)
-            && modRuleAtlas.Any();
-    }
-
     private void NextMod()
     {
         int i = CurrentModIdx + 1;
@@ -661,7 +655,7 @@ internal sealed class ModSpritePicker : IClickableMenu
             i = 0;
         while (i < modDataHolders.Count)
         {
-            if (HasDisplayData(modDataHolders[i]))
+            if (modDataHolders[i].HasDisplayData(helper.GameContent))
             {
                 CurrentModIdx = i;
                 Game1.playSound("shwip");
@@ -675,7 +669,7 @@ internal sealed class ModSpritePicker : IClickableMenu
         int prev = CurrentModIdx;
         while (i < prev)
         {
-            if (HasDisplayData(modDataHolders[i]))
+            if (modDataHolders[i].HasDisplayData(helper.GameContent))
             {
                 CurrentModIdx = i;
                 Game1.playSound("shwip");
@@ -692,7 +686,7 @@ internal sealed class ModSpritePicker : IClickableMenu
             i = modDataHolders.Count - 1;
         while (i >= 0)
         {
-            if (HasDisplayData(modDataHolders[i]))
+            if (modDataHolders[i].HasDisplayData(helper.GameContent))
             {
                 CurrentModIdx = i;
                 Game1.playSound("shwip");
@@ -706,7 +700,7 @@ internal sealed class ModSpritePicker : IClickableMenu
         int prev = CurrentModIdx;
         while (i >= prev)
         {
-            if (HasDisplayData(modDataHolders[i]))
+            if (modDataHolders[i].HasDisplayData(helper.GameContent))
             {
                 CurrentModIdx = i;
                 Game1.playSound("shwip");

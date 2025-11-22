@@ -11,7 +11,7 @@
     <LangVersion>preview</LangVersion>
     <EnableHarmony>true</EnableHarmony>
 
-    <!-- <DefineConstants>MP_DESYNC</DefineConstants> -->
+    <!-- <DefineConstants>DEBUG_VERBOSE</DefineConstants> -->
   </PropertyGroup>
 
   <PropertyGroup>

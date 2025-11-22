@@ -34,7 +34,9 @@ internal sealed class ItemSpriteManager
     internal void AddToNeedApplyDynamicSpriteIndexIfWatched(Item item)
     {
         if (watchedItems.TryGetValue(item, out _))
+        {
             needApplyDynamicSpriteIndex.Add(item);
+        }
     }
 
     internal ItemSpriteManager(IModHelper helper)
@@ -54,10 +56,7 @@ internal sealed class ItemSpriteManager
 
         if (modDataAssets.Count == 0)
         {
-            ModEntry.Log(
-                $"No content packs detected, mod is disabled. All sprite indexes will be reset once a save is loaded."
-            );
-            this.helper.Events.GameLoop.SaveLoaded += OnSaveLoaded_ModDisabled;
+            ModEntry.Log("No content packs detected, mod is disabled.", LogLevel.Warn);
             spritePicker = null!;
             return;
         }
@@ -68,11 +67,6 @@ internal sealed class ItemSpriteManager
 
         this.helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
         this.helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
-
-#if !MP_DESYNC
-        this.helper.Events.GameLoop.Saving += OnSaving;
-        this.helper.Events.GameLoop.Saved += OnSaved;
-#endif
 
         helper.ConsoleCommands.Add(
             "disco-export",
@@ -96,6 +90,7 @@ internal sealed class ItemSpriteManager
         string exportDir = Path.Combine(helper.DirectoryPath, "export");
         Directory.CreateDirectory(exportDir);
         ModEntry.Log($"Export to '{exportDir}':", LogLevel.Info);
+        ReloadAllItemSpriteComp();
         foreach (ItemSpriteComp itemSpriteComp in qIdToComp.Values)
         {
             itemSpriteComp.Export(exportDir);
@@ -138,7 +133,8 @@ internal sealed class ItemSpriteManager
 
     private bool TryGetItemSpriteCompForQualifiedItemId(
         string qualifiedItemId,
-        [NotNullWhen(true)] out ItemSpriteComp? itemSpriteComp
+        [NotNullWhen(true)] out ItemSpriteComp? itemSpriteComp,
+        bool makeNewIfNotFound = false
     )
     {
         itemSpriteComp = null;
@@ -159,8 +155,15 @@ internal sealed class ItemSpriteManager
 
         if (!qIdToComp.TryGetValue(qualifiedItemId, out itemSpriteComp))
         {
-            itemSpriteComp = new ItemSpriteComp(helper.GameContent);
-            qIdToComp[qualifiedItemId] = itemSpriteComp;
+            if (makeNewIfNotFound)
+            {
+                itemSpriteComp = new ItemSpriteComp(helper.GameContent);
+                qIdToComp[qualifiedItemId] = itemSpriteComp;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         if (itemSpriteComp.IsValid)
@@ -209,7 +212,6 @@ internal sealed class ItemSpriteManager
     {
         if (modDataAssets.ContainsKey(e.NameWithoutLocale))
         {
-            ModEntry.LogDebug($"Load '{e.Name}' for content pack");
             e.LoadFrom(() => new Dictionary<string, ItemSpriteRuleAtlas>(), AssetLoadPriority.Exclusive);
         }
         else if (e.Name.IsEquivalentTo("Data/BigCraftables"))
@@ -287,7 +289,13 @@ internal sealed class ItemSpriteManager
         {
             foreach (string key in needItemSpriteCompRecheck)
             {
-                if (TryGetItemSpriteCompForQualifiedItemId(key, out ItemSpriteComp? itemSpriteComp))
+                if (
+                    TryGetItemSpriteCompForQualifiedItemId(
+                        key,
+                        out ItemSpriteComp? itemSpriteComp,
+                        makeNewIfNotFound: true
+                    )
+                )
                 {
                     foreach ((Item item, _) in watchedItems)
                     {
@@ -315,7 +323,31 @@ internal sealed class ItemSpriteManager
         }
     }
 
-    private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e) => RecheckAllDynamicSpriteIndex(true);
+    private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
+    {
+        ReloadAllItemSpriteComp();
+        RecheckAllDynamicSpriteIndex(true);
+    }
+
+    private void ReloadAllItemSpriteComp()
+    {
+        foreach (ModProidedDataHolder dataHolder in modDataAssets.Values)
+        {
+            if (
+                !dataHolder.TryGetModRuleAtlas(
+                    helper.GameContent,
+                    out Dictionary<string, ItemSpriteRuleAtlas>? modRuleAtlas
+                )
+            )
+            {
+                continue;
+            }
+            foreach (ItemSpriteRuleAtlas holder in modRuleAtlas.Values)
+            {
+                TryGetItemSpriteCompForQualifiedItemId(holder.QualifiedItemId, out _, makeNewIfNotFound: true);
+            }
+        }
+    }
 
     private void RecheckAllDynamicSpriteIndex(bool isSaveLoaded = false)
     {
@@ -362,7 +394,6 @@ internal sealed class ItemSpriteManager
         return false;
     }
 
-#if MP_DESYNC
     internal bool SetSpriteIndex(Item item, int newSpriteIndex)
     {
         if (watchedItems.TryGetValue(item, out ItemSpriteIndexHolder? holder))
@@ -379,25 +410,12 @@ internal sealed class ItemSpriteManager
         {
             return holder.SpriteIndex;
         }
+        if (qIdToComp.TryGetValue(item.QualifiedItemId, out ItemSpriteComp? itemSpriteComp))
+        {
+            ApplyDynamicSpriteIndex(item, resetSpriteIndex: true, itemSpriteComp: itemSpriteComp);
+        }
         return currentSpriteIndex;
     }
-#else
-    private void OnSaving(object? sender, SavingEventArgs e)
-    {
-        foreach ((_, ItemSpriteIndexHolder holder) in watchedItems)
-        {
-            holder.Unapply();
-        }
-    }
-
-    private void OnSaved(object? sender, SavedEventArgs e)
-    {
-        foreach ((_, ItemSpriteIndexHolder holder) in watchedItems)
-        {
-            holder.Reapply();
-        }
-    }
-#endif
 
     internal void FixAdditionalMetadata(ItemMetadata metadata)
     {

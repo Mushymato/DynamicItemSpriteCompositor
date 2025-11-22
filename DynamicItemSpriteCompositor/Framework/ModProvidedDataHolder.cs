@@ -25,7 +25,11 @@ internal sealed record ModProidedDataHolder(IAssetName AssetName, IManifest Mod)
     )
     {
         modRuleAtlas = null;
-        if (!IsValid)
+        if (IsValid)
+        {
+            modRuleAtlas = this.Data;
+        }
+        else
         {
             if (!content.DoesAssetExist<Dictionary<string, ItemSpriteRuleAtlas>>(AssetName))
             {
@@ -116,10 +120,12 @@ internal sealed record ModProidedDataHolder(IAssetName AssetName, IManifest Mod)
             modRuleAtlas.RemoveWhere(kv => invalidKeys.Contains(kv.Key));
             this.Data = modRuleAtlas;
         }
-        else
-        {
-            modRuleAtlas = this.Data;
-        }
         return true;
+    }
+
+    internal bool HasDisplayData(IGameContentHelper content)
+    {
+        return TryGetModRuleAtlas(content, out Dictionary<string, ItemSpriteRuleAtlas>? modRuleAtlas)
+            && modRuleAtlas.Any();
     }
 }

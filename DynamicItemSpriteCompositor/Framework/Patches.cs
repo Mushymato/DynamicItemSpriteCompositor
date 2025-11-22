@@ -34,7 +34,6 @@ internal static class Patches
                 }
             );
 
-#if MP_DESYNC
             harmony.Patch(
                 original: AccessTools.PropertySetter(typeof(Item), nameof(Item.ParentSheetIndex)),
                 prefix: new HarmonyMethod(typeof(Patches), nameof(Item_set_ParentSheetIndex_Prefix))
@@ -49,7 +48,6 @@ internal static class Patches
                     priority = Priority.Last,
                 }
             );
-#endif
 
             harmony.Patch(
                 original: AccessTools.DeclaredMethod(typeof(ItemMetadata), "SetTypeDefinition"),
@@ -103,7 +101,6 @@ internal static class Patches
         ModEntry.manager.AddToNeedApplyDynamicSpriteIndexIfWatched(__instance);
     }
 
-#if MP_DESYNC
     private static bool Item_set_ParentSheetIndex_Prefix(Item __instance, int value)
     {
         return ModEntry.manager.SetSpriteIndex(__instance, value);
@@ -113,7 +110,6 @@ internal static class Patches
     {
         __result = ModEntry.manager.GetSpriteIndex(__instance, __result);
     }
-#endif
 
     private static void ItemMetadata_SetTypeDefinition_Postfix(ref ItemMetadata __instance)
     {

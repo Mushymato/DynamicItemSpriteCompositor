@@ -492,7 +492,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
     #region PATCH_EXPORT
     internal void Export(string exportDir)
     {
-        if (metadata != null && spriteRuleAtlasList?.Count > 0)
+        if (metadata != null)
         {
             string fileName = string.Join('_', metadata.QualifiedItemId.Split(Path.GetInvalidFileNameChars()));
             using Texture2D exported = UnPremultiplyTransparency(compTx);
