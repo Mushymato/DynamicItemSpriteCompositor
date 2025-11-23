@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using StardewModdingAPI;
+using StardewModdingAPI.Events;
 using StardewValley;
 using StardewValley.BellsAndWhistles;
 using StardewValley.ItemTypeDefinitions;
@@ -203,9 +204,10 @@ internal sealed class ModSpritePicker : IClickableMenu
     private readonly Rectangle MenuRectBG = new(0, 256, 60, 60);
 
     private readonly IModHelper helper;
+    private readonly ModConfigHelper config;
+    internal readonly List<ModProidedDataHolder> modDataHolders;
     private readonly Action<string, bool> updateForQId;
 
-    internal readonly List<ModProidedDataHolder> modDataHolders;
     private int CurrentModIdx
     {
         get => field;
@@ -234,6 +236,7 @@ internal sealed class ModSpritePicker : IClickableMenu
 
     internal ModSpritePicker(
         IModHelper helper,
+        ModConfigHelper config,
         Dictionary<IAssetName, ModProidedDataHolder> modDataAssets,
         Action<string, bool> updateForQId
     )
@@ -246,6 +249,7 @@ internal sealed class ModSpritePicker : IClickableMenu
         )
     {
         this.helper = helper;
+        this.config = config;
         this.modDataHolders = modDataAssets.Values.ToList();
         this.updateForQId = updateForQId;
 
@@ -306,12 +310,17 @@ internal sealed class ModSpritePicker : IClickableMenu
             );
         }
 
-        // WIP menu
         helper.ConsoleCommands.Add(
             "disco-pick",
             "Configure which sprite is being used for each content pack.",
             ConsolePickUI
         );
+        helper.Events.GameLoop.GameLaunched += OnGameLaunched;
+    }
+
+    private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
+    {
+        config.SetupGMCM(this);
     }
 
     public static void DrawWithDisplayInfo(
@@ -737,7 +746,7 @@ internal sealed class ModSpritePicker : IClickableMenu
     protected override void cleanupBeforeExit()
     {
         ResetDisplayData();
-        ModEntry.config.SaveContentPackTextureOptions(modDataHolders);
+        config.SaveContentPackTextureOptions(modDataHolders);
         base.cleanupBeforeExit();
     }
 
@@ -747,7 +756,7 @@ internal sealed class ModSpritePicker : IClickableMenu
     {
         if (CurrentMod == null)
         {
-            ModEntry.config.LoadContentPackTextureOptions(this.modDataHolders);
+            config.LoadContentPackTextureOptions(this.modDataHolders);
             NextMod();
         }
 

@@ -1,7 +1,4 @@
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using DynamicItemSpriteCompositor.Models;
-using HarmonyLib;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Newtonsoft.Json;
@@ -182,7 +179,6 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         if (needTextureRecomp)
             UpdateCompTx();
 
-        OverrideParsedItemDataTexture(parsedItemData);
         IsDataValid = true;
     }
 
@@ -316,50 +312,36 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         }
     }
 
-    internal void FixAdditionalMetadata(ItemMetadata metadata)
+    private Texture2D? currentTexture = null;
+    private Rectangle currentDefaultSourceRect = Rectangle.Empty;
+
+    internal void SetDrawParsedItemData(ParsedItemData parsedItemData, int drawIndex)
     {
-        if (spriteRuleAtlasList?.Count == 0)
-            return;
-        if (metadata.LocalItemId != metadata.LocalItemId || metadata.TypeIdentifier != metadata.TypeIdentifier)
-            return;
-        if (metadata.GetParsedData() is not ParsedItemData parsedItemData)
+        if (parsedItemData.IsErrorItem)
             return;
 
-        OverrideParsedItemDataTexture(parsedItemData);
+        currentTexture = parsedItemData.GetTexture();
+        currentDefaultSourceRect = DynamicMethods.ParsedItemData_get_DefaultSourceRect(parsedItemData);
+
+        DynamicMethods.ParsedItemData_set_Texture(parsedItemData, compTx);
+        DynamicMethods.ParsedItemData_set_DefaultSourceRect(
+            parsedItemData,
+            GetSourceRectForIndex(textureSize.X, drawIndex)
+        );
+        DynamicMethods.ParsedItemData_set_SpriteIndex(parsedItemData, drawIndex);
     }
 
-    private static readonly FieldInfo ParsedItemData_LoadedTexture = AccessTools.DeclaredField(
-        typeof(ParsedItemData),
-        "LoadedTexture"
-    );
-    private static readonly FieldInfo ParsedItemData_Texture = AccessTools.DeclaredField(
-        typeof(ParsedItemData),
-        "Texture"
-    );
-    private static readonly FieldInfo ParsedItemData_DefaultSourceRect = AccessTools.DeclaredField(
-        typeof(ParsedItemData),
-        "DefaultSourceRect"
-    );
-    private static readonly FieldInfo ParsedItemData_SpriteIndex = AccessTools.DeclaredField(
-        typeof(ParsedItemData),
-        nameof(ParsedItemData.SpriteIndex)
-    );
-
-    private void OverrideParsedItemDataTexture(ParsedItemData parsedItemData)
+    internal void UnsetDrawParsedItemData(ParsedItemData parsedItemData)
     {
-        if (IsCompTxValid)
-        {
-            ParsedItemData_Texture?.SetValue(parsedItemData, compTx);
-            ParsedItemData_LoadedTexture?.SetValue(parsedItemData, true);
-            ParsedItemData_DefaultSourceRect?.SetValue(parsedItemData, new Rectangle(0, 0, spriteSize.X, spriteSize.Y));
-            ParsedItemData_SpriteIndex?.SetValue(parsedItemData, 0);
-        }
-        else
-        {
-            ParsedItemData_Texture?.SetValue(parsedItemData, null);
-            ParsedItemData_LoadedTexture?.SetValue(parsedItemData, false);
-            ParsedItemData_SpriteIndex?.SetValue(parsedItemData, baseSpriteIndex);
-        }
+        if (parsedItemData.IsErrorItem)
+            return;
+
+        DynamicMethods.ParsedItemData_set_Texture(parsedItemData, currentTexture);
+        DynamicMethods.ParsedItemData_set_DefaultSourceRect(parsedItemData, currentDefaultSourceRect);
+        currentTexture = null;
+        currentDefaultSourceRect = Rectangle.Empty;
+
+        DynamicMethods.ParsedItemData_set_SpriteIndex(parsedItemData, baseSpriteIndex);
     }
 
     internal void ForceInvalidate()
@@ -415,12 +397,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
 
     internal bool CanApplySpriteIndexFromRules => spriteRuleAtlasList?.Count > 0;
 
-    internal void DoApplySpriteIndexFromRules(
-        Item item,
-        ItemSpriteIndexHolder holder,
-        bool resetSpriteIndex,
-        bool isSaveLoaded
-    )
+    internal void DoApplySpriteIndexFromRules(Item item, ItemSpriteIndexHolder holder)
     {
         List<SpriteIndexRule> validRules = [];
         foreach (ItemSpriteRuleAtlas spriteAtlas in this.spriteRuleAtlasList!)
@@ -464,7 +441,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             }
         }
 
-        holder.Apply(item, spriteIndex, baseSpriteIndex, resetSpriteIndex, isSaveLoaded);
+        holder.Apply(this, spriteIndex);
     }
 
     /// Based on https://github.com/Pathoschild/StardewMods/blob/95d695b205199de4bad86770d69a30806d1721a2/ContentPatcher/Framework/Commands/Commands/ExportCommand.cs

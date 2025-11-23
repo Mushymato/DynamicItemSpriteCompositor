@@ -1,11 +1,6 @@
-using System.Reflection;
-using System.Reflection.Emit;
 using HarmonyLib;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
-using StardewValley;
-using StardewValley.ItemTypeDefinitions;
 using StardewValley.Objects;
 
 namespace DynamicItemSpriteCompositor.Framework;
@@ -13,161 +8,101 @@ namespace DynamicItemSpriteCompositor.Framework;
 internal static class Patches
 {
     internal static bool ItemMetadata_SetTypeDefinition_Postfix_Enabled { get; set; } = true;
-    internal static bool ItemMetadata_ParentSheetIndex_Enabled { get; set; } = true;
 
     internal static void Register()
     {
         Harmony harmony = new(ModEntry.ModId);
         try
         {
-            harmony.Patch(
-                original: AccessTools.DeclaredMethod(typeof(Item), nameof(Item.ResetParentSheetIndex)),
-                postfix: new HarmonyMethod(typeof(Patches), nameof(Item_ResetParentSheetIndex_Postfix))
-                {
-                    priority = Priority.Last,
-                }
-            );
-            harmony.Patch(
-                original: AccessTools.DeclaredMethod(typeof(Item), nameof(Item.MarkContextTagsDirty)),
-                prefix: new HarmonyMethod(typeof(Patches), nameof(Item_MarkContextTagsDirty_Prefix))
-                {
-                    priority = Priority.Last,
-                }
-            );
-
-            harmony.Patch(
-                original: AccessTools.PropertyGetter(typeof(Item), nameof(Item.ParentSheetIndex)),
-                postfix: new HarmonyMethod(typeof(Patches), nameof(Item_get_ParentSheetIndex_Postfix))
-                {
-                    priority = Priority.Last,
-                }
-            );
-
-            harmony.Patch(
-                original: AccessTools.DeclaredMethod(typeof(ItemMetadata), "SetTypeDefinition"),
-                postfix: new HarmonyMethod(typeof(Patches), nameof(ItemMetadata_SetTypeDefinition_Postfix))
-                {
-                    priority = Priority.Last,
-                }
-            );
-        }
-        catch (Exception ex)
-        {
-            ModEntry.Log($"Failed to patch sprite index manipulation:\n{ex}", LogLevel.Error);
-        }
-
-        try
-        {
-            HarmonyMethod getSourceRectTranspiler = new(typeof(Patches), nameof(SObject_draw_Transpiler))
-            {
-                priority = Priority.Last,
-            };
+            HarmonyMethod drawPrefix = new(typeof(Patches), nameof(SObject_draw_Prefix)) { priority = Priority.First };
+            HarmonyMethod drawPostfix = new(typeof(Patches), nameof(SObject_draw_Postfix)) { priority = Priority.Last };
+            // SObject
             harmony.Patch(
                 original: AccessTools.DeclaredMethod(
                     typeof(SObject),
                     nameof(SObject.draw),
                     [typeof(SpriteBatch), typeof(int), typeof(int), typeof(float)]
                 ),
-                transpiler: getSourceRectTranspiler
+                prefix: drawPrefix,
+                postfix: drawPostfix
             );
             harmony.Patch(
+                original: AccessTools.DeclaredMethod(typeof(SObject), nameof(SObject.drawInMenu)),
+                prefix: drawPrefix,
+                postfix: drawPostfix
+            );
+            harmony.Patch(
+                original: AccessTools.DeclaredMethod(typeof(SObject), nameof(SObject.drawWhenHeld)),
+                prefix: drawPrefix,
+                postfix: drawPostfix
+            );
+            harmony.Patch(
+                original: AccessTools.DeclaredMethod(typeof(SObject), nameof(SObject.drawAsProp)),
+                prefix: drawPrefix,
+                postfix: drawPostfix
+            );
+            // ColoredObject
+            harmony.Patch(
                 original: AccessTools.DeclaredMethod(
-                    typeof(Furniture),
-                    nameof(Furniture.draw),
+                    typeof(ColoredObject),
+                    nameof(ColoredObject.draw),
                     [typeof(SpriteBatch), typeof(int), typeof(int), typeof(float)]
                 ),
-                transpiler: getSourceRectTranspiler
+                prefix: drawPrefix,
+                postfix: drawPostfix
+            );
+            harmony.Patch(
+                original: AccessTools.DeclaredMethod(typeof(ColoredObject), nameof(ColoredObject.drawInMenu)),
+                prefix: drawPrefix,
+                postfix: drawPostfix
+            );
+            harmony.Patch(
+                original: AccessTools.DeclaredMethod(typeof(ColoredObject), nameof(ColoredObject.drawWhenHeld)),
+                prefix: drawPrefix,
+                postfix: drawPostfix
+            );
+            // Furniture
+            harmony.Patch(
+                original: AccessTools.DeclaredMethod(typeof(Furniture), nameof(Furniture.draw)),
+                prefix: drawPrefix,
+                postfix: drawPostfix
             );
         }
         catch (Exception ex)
         {
-            ModEntry.Log($"Failed to patch Object.draw, some visual bugs exist:\n{ex}", LogLevel.Warn);
+            ModEntry.Log($"Failed to patch sprite index manipulation:\n{ex}", LogLevel.Error);
+            return;
         }
     }
 
-    private static void Item_ResetParentSheetIndex_Postfix(Item __instance)
-    {
-        ModEntry.manager.AddToNeedApplyDynamicSpriteIndex(__instance);
-    }
+    private static readonly HashSet<SObject> ObjectsCheckedThisDraw = [];
 
-    private static void Item_MarkContextTagsDirty_Prefix(Item __instance)
+    private static void SObject_draw_Prefix(SObject __instance, ref List<(SObject, ItemSpriteIndexHolder?)> __state)
     {
-        ModEntry.manager.AddToNeedApplyDynamicSpriteIndexIfWatched(__instance);
-    }
-
-    private static void Item_get_ParentSheetIndex_Postfix(Item __instance, ref int __result)
-    {
-        if (ItemMetadata_ParentSheetIndex_Enabled)
-            __result = ModEntry.manager.GetSpriteIndex(__instance, __result);
-    }
-
-    private static void ItemMetadata_SetTypeDefinition_Postfix(ref ItemMetadata __instance)
-    {
-        if (ItemMetadata_SetTypeDefinition_Postfix_Enabled)
-            ModEntry.manager.FixAdditionalMetadata(__instance);
-    }
-
-    public static IEnumerable<CodeInstruction> SObject_draw_Transpiler(
-        IEnumerable<CodeInstruction> instructions,
-        ILGenerator generator
-    )
-    {
-        try
+        __state = [];
+        for (SObject curr = __instance; curr != null; curr = curr.heldObject.Value)
         {
-            CodeMatch[] ParsedItemData_GetSourceRect =
-            [
-                new(),
-                new(OpCodes.Initobj),
-                new(),
-                new(
-                    OpCodes.Callvirt,
-                    AccessTools.DeclaredMethod(typeof(ParsedItemData), nameof(ParsedItemData.GetSourceRect))
-                ),
-            ];
-            MethodInfo Fix_ParsedItemData_GetSourceRect_Method = AccessTools.DeclaredMethod(
-                typeof(Patches),
-                nameof(Fix_ParsedItemData_GetSourceRect)
-            );
-            int cnt = 0;
-            CodeMatcher matcher = new(instructions, generator);
-            matcher
-                .End()
-                .MatchEndBackwards(ParsedItemData_GetSourceRect)
-                .Repeat(match =>
-                {
-                    match.Opcode = OpCodes.Call;
-                    match.Operand = Fix_ParsedItemData_GetSourceRect_Method;
-                    match.InsertAndAdvance([new(OpCodes.Ldarg_0)]);
-                    cnt++;
-                });
-            ModEntry.LogOnce($"Replaced {cnt} ParsedItemData.GetSourceRect");
-            return matcher.Instructions();
-        }
-        catch (Exception ex)
-        {
-            ModEntry.Log($"Failed in SObject_draw_Transpiler:\n{ex}", LogLevel.Warn);
-            return instructions;
-        }
-    }
-
-    private static Rectangle Fix_ParsedItemData_GetSourceRect(
-        ParsedItemData parsedItemData,
-        int offset,
-        int? spriteIndex,
-        SObject obj
-    )
-    {
-        if (spriteIndex == null)
-        {
-            if (parsedItemData.QualifiedItemId == obj.heldObject.Value?.QualifiedItemId)
+            if (ObjectsCheckedThisDraw.Contains(curr))
             {
-                spriteIndex = obj.heldObject.Value.ParentSheetIndex;
+                continue;
             }
-            else
+            ObjectsCheckedThisDraw.Add(curr);
+            if (!ModEntry.manager.EnsureSpriteIndexForThisDraw(curr, out ItemSpriteIndexHolder? holder))
             {
-                spriteIndex = obj.ParentSheetIndex;
+                __state.Add(new(curr, null));
+                continue;
             }
+            __state.Add(new(curr, holder));
+            holder.SetDrawParsedItemData(curr);
         }
-        return parsedItemData.GetSourceRect(offset, spriteIndex);
+    }
+
+    private static void SObject_draw_Postfix(ref List<(SObject, ItemSpriteIndexHolder?)> __state)
+    {
+        foreach ((SObject curr, ItemSpriteIndexHolder? holder) in __state)
+        {
+            holder?.UnsetDrawParsedItemData(curr);
+            ObjectsCheckedThisDraw.Remove(curr);
+        }
     }
 }

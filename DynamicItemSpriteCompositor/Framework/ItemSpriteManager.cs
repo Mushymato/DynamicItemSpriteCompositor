@@ -7,7 +7,6 @@ using StardewValley;
 using StardewValley.Extensions;
 using StardewValley.GameData.BigCraftables;
 using StardewValley.ItemTypeDefinitions;
-using StardewValley.Menus;
 
 namespace DynamicItemSpriteCompositor.Framework;
 
@@ -15,34 +14,15 @@ internal sealed class ItemSpriteManager
 {
     private readonly IModHelper helper;
 
-    private readonly Dictionary<IAssetName, ModProidedDataHolder> modDataAssets = [];
+    internal readonly Dictionary<IAssetName, ModProidedDataHolder> modDataAssets;
     internal readonly Dictionary<string, ItemSpriteComp> qIdToComp = [];
 
     private readonly HashSet<string> needItemSpriteCompRecheck = [];
-    private HashSet<Item> needApplyDynamicSpriteIndex = [];
     private readonly ConditionalWeakTable<Item, ItemSpriteIndexHolder> watchedItems = [];
 
-    internal readonly ModSpritePicker spritePicker;
-
-    internal void AddToNeedApplyDynamicSpriteIndex(Item item)
+    internal static ItemSpriteManager? Make(IModHelper helper)
     {
-        if (ApplyDynamicSpriteIndex(item, resetSpriteIndex: true))
-        {
-            needApplyDynamicSpriteIndex.Add(item);
-        }
-    }
-
-    internal void AddToNeedApplyDynamicSpriteIndexIfWatched(Item item)
-    {
-        if (watchedItems.TryGetValue(item, out _))
-        {
-            needApplyDynamicSpriteIndex.Add(item);
-        }
-    }
-
-    internal ItemSpriteManager(IModHelper helper)
-    {
-        this.helper = helper;
+        Dictionary<IAssetName, ModProidedDataHolder> modDataAssets = [];
         foreach (IModInfo info in helper.ModRegistry.GetAll())
         {
             if (info.Manifest.Dependencies.Any(dep => dep.UniqueID.EqualsIgnoreCase(ModEntry.ModId)))
@@ -58,9 +38,16 @@ internal sealed class ItemSpriteManager
         if (modDataAssets.Count == 0)
         {
             ModEntry.Log("No content packs detected, mod is disabled.", LogLevel.Warn);
-            spritePicker = null!;
-            return;
+            return null;
         }
+
+        return new(helper, modDataAssets);
+    }
+
+    internal ItemSpriteManager(IModHelper helper, Dictionary<IAssetName, ModProidedDataHolder> modDataAssets)
+    {
+        this.helper = helper;
+        this.modDataAssets = modDataAssets;
 
         this.helper.Events.Content.AssetRequested += OnAssetRequested;
         this.helper.Events.Content.AssetsInvalidated += OnAssetsInvalidated;
@@ -68,8 +55,6 @@ internal sealed class ItemSpriteManager
 
         this.helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
         this.helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
-        this.helper.Events.GameLoop.Saving += OnSaving;
-        this.helper.Events.GameLoop.Saved += OnSaved;
 
         helper.ConsoleCommands.Add(
             "disco-export",
@@ -82,10 +67,6 @@ internal sealed class ItemSpriteManager
             "Recheck dynamic sprites on every item in the world.",
             ConsoleRecheck
         );
-
-        Patches.Register();
-
-        spritePicker = new(helper, modDataAssets, UpdateCompTxForQId);
     }
 
     private void ConsoleExport(string arg1, string[] arg2)
@@ -119,10 +100,30 @@ internal sealed class ItemSpriteManager
                 {
                     if (item.QualifiedItemId == qualifiedItemId)
                     {
-                        ApplyDynamicSpriteIndex(item, itemSpriteComp: itemSpriteComp);
+                        ApplyDynamicSpriteIndex(item, itemSpriteComp, out _);
                     }
                 }
             }
+        }
+        else
+        {
+            RemoveWatchedItemsByQId(qualifiedItemId);
+        }
+    }
+
+    private void RemoveWatchedItemsByQId(string qualifiedItemId)
+    {
+        List<Item> matchingWatchedItems = [];
+        foreach ((Item item, _) in watchedItems)
+        {
+            if (item.QualifiedItemId == qualifiedItemId)
+            {
+                matchingWatchedItems.Add(item);
+            }
+        }
+        foreach (Item item in matchingWatchedItems)
+        {
+            watchedItems.Remove(item);
         }
     }
 
@@ -134,13 +135,13 @@ internal sealed class ItemSpriteManager
         return metadata;
     }
 
-    internal static string SafeGetQualifiedItemId(Item item)
-    {
-        Patches.ItemMetadata_ParentSheetIndex_Enabled = false;
-        string qualifiedItemId = item.QualifiedItemId;
-        Patches.ItemMetadata_ParentSheetIndex_Enabled = true;
-        return qualifiedItemId;
-    }
+    // internal static string SafeGetQualifiedItemId(Item item)
+    // {
+    //     Patches.ItemMetadata_ParentSheetIndex_Enabled = false;
+    //     string qualifiedItemId = item.QualifiedItemId;
+    //     Patches.ItemMetadata_ParentSheetIndex_Enabled = true;
+    //     return qualifiedItemId;
+    // }
 
     private bool TryGetItemSpriteCompForQualifiedItemId(
         string qualifiedItemId,
@@ -179,14 +180,14 @@ internal sealed class ItemSpriteManager
 
         if (itemSpriteComp.IsValid)
         {
-            itemSpriteComp.FixAdditionalMetadata(itemMetadata);
+            // itemSpriteComp.FixAdditionalMetadata(itemMetadata);
             return true;
         }
 
         if (itemSpriteComp.IsDataValid && !itemSpriteComp.IsCompTxValid)
         {
             itemSpriteComp.UpdateCompTx();
-            itemSpriteComp.FixAdditionalMetadata(itemMetadata);
+            // itemSpriteComp.FixAdditionalMetadata(itemMetadata);
             return true;
         }
 
@@ -312,36 +313,29 @@ internal sealed class ItemSpriteManager
                     {
                         if (item.QualifiedItemId == key)
                         {
-                            ApplyDynamicSpriteIndex(item, itemSpriteComp: itemSpriteComp);
+                            ApplyDynamicSpriteIndex(item, itemSpriteComp, out _);
                         }
                     }
                 }
                 else
                 {
                     qIdToComp.Remove(key);
+                    RemoveWatchedItemsByQId(key);
                 }
             }
             needItemSpriteCompRecheck.Clear();
-        }
-        else if (needApplyDynamicSpriteIndex.Any())
-        {
-            HashSet<Item> currentToApply = needApplyDynamicSpriteIndex;
-            needApplyDynamicSpriteIndex = [];
-            foreach (Item item in currentToApply)
-            {
-                ApplyDynamicSpriteIndex(item);
-            }
         }
     }
 
     private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
     {
         ReloadAllItemSpriteComp();
-        RecheckAllDynamicSpriteIndex(true);
+        RecheckAllDynamicSpriteIndex();
     }
 
     private void ReloadAllItemSpriteComp()
     {
+        ModEntry.config.LoadContentPackTextureOptions(this.modDataAssets.Values);
         foreach (ModProidedDataHolder dataHolder in modDataAssets.Values)
         {
             if (
@@ -360,11 +354,15 @@ internal sealed class ItemSpriteManager
         }
     }
 
-    private void RecheckAllDynamicSpriteIndex(bool isSaveLoaded = false)
+    private void RecheckAllDynamicSpriteIndex()
     {
+        watchedItems.Clear();
         Utility.ForEachItem(item =>
         {
-            ApplyDynamicSpriteIndex(item, isSaveLoaded: isSaveLoaded);
+            if (TryGetItemSpriteCompForQualifiedItemId(item.QualifiedItemId, out ItemSpriteComp? itemSpriteComp))
+            {
+                ApplyDynamicSpriteIndex(item, itemSpriteComp, out _);
+            }
             return true;
         });
     }
@@ -372,80 +370,47 @@ internal sealed class ItemSpriteManager
     private void OnReturnedToTitle(object? sender, ReturnedToTitleEventArgs e)
     {
         needItemSpriteCompRecheck.Clear();
-        needApplyDynamicSpriteIndex.Clear();
         watchedItems.Clear();
         qIdToComp.Clear();
     }
 
-    private void OnSaving(object? sender, SavingEventArgs e)
-    {
-        ItemSpriteIndexHolder.IsSaving = true;
-        int invalid = 0;
-        int total = 0;
-        foreach ((Item item, ItemSpriteIndexHolder holder) in watchedItems)
-        {
-            total++;
-            invalid += holder.SetParentSheetIndexToChanged() ? 0 : 1;
-        }
-        ModEntry.Log($"OnSaving Invalid: {invalid}/{total}");
-    }
-
-    private void OnSaved(object? sender, SavedEventArgs e)
-    {
-        ItemSpriteIndexHolder.IsSaving = false;
-    }
-
     internal bool ApplyDynamicSpriteIndex(
         Item item,
-        bool resetSpriteIndex = false,
-        bool isSaveLoaded = false,
-        ItemSpriteComp? itemSpriteComp = null
+        ItemSpriteComp itemSpriteComp,
+        [NotNullWhen(true)] out ItemSpriteIndexHolder? holder
     )
     {
-        if (itemSpriteComp != null || TryGetItemSpriteCompForQualifiedItemId(item.QualifiedItemId, out itemSpriteComp))
+        holder = null;
+        if (itemSpriteComp.CanApplySpriteIndexFromRules)
         {
-            if (itemSpriteComp.CanApplySpriteIndexFromRules)
-            {
-                ItemSpriteIndexHolder holder = watchedItems.GetValue(item, ItemSpriteIndexHolder.Make);
-                itemSpriteComp.DoApplySpriteIndexFromRules(item, holder, resetSpriteIndex, isSaveLoaded);
-                return true;
-            }
+            holder = watchedItems.GetValue(item, ItemSpriteIndexHolder.Make);
+            itemSpriteComp.DoApplySpriteIndexFromRules(item, holder);
+            return true;
         }
-        watchedItems.Remove(item);
         return false;
     }
 
-    internal bool SetSpriteIndex(Item item, int newSpriteIndex)
+    internal bool EnsureSpriteIndexForThisDraw(SObject obj, [NotNullWhen(true)] out ItemSpriteIndexHolder? holder)
     {
-        if (watchedItems.TryGetValue(item, out ItemSpriteIndexHolder? holder))
+        if (watchedItems.TryGetValue(obj, out holder))
         {
-            holder.Change(item, newSpriteIndex);
-            return false;
+            if (
+                DynamicMethods.Item_get_contextTagsDirty(obj)
+                && TryGetItemSpriteCompForQualifiedItemId(obj.QualifiedItemId, out ItemSpriteComp? itemSpriteComp)
+            )
+            {
+                return ApplyDynamicSpriteIndex(obj, itemSpriteComp, out holder);
+            }
+            return true;
         }
-        return true;
-    }
-
-    internal int GetSpriteIndex(Item item, int currentSpriteIndex)
-    {
-        if (watchedItems.TryGetValue(item, out ItemSpriteIndexHolder? holder))
-        {
-            return holder.SpriteIndex;
-        }
-        if (qIdToComp.TryGetValue(SafeGetQualifiedItemId(item), out ItemSpriteComp? itemSpriteComp))
-        {
-            ApplyDynamicSpriteIndex(item, resetSpriteIndex: true, itemSpriteComp: itemSpriteComp);
-        }
-        return currentSpriteIndex;
-    }
-
-    internal void FixAdditionalMetadata(ItemMetadata metadata)
-    {
-        if (
-            metadata.QualifiedItemId != null
-            && qIdToComp.TryGetValue(metadata.QualifiedItemId, out ItemSpriteComp? itemSpriteComp)
+        else if (
+            TryGetItemSpriteCompForQualifiedItemId(obj.QualifiedItemId, out ItemSpriteComp? itemSpriteComp)
+            && ApplyDynamicSpriteIndex(obj, itemSpriteComp, out holder)
         )
         {
-            itemSpriteComp.FixAdditionalMetadata(metadata);
+            return true;
         }
+        watchedItems.Remove(obj);
+        return false;
     }
 }

@@ -1,9 +1,7 @@
 global using SObject = StardewValley.Object;
 using System.Diagnostics;
 using DynamicItemSpriteCompositor.Framework;
-using DynamicItemSpriteCompositor.Integration;
 using StardewModdingAPI;
-using StardewModdingAPI.Events;
 
 namespace DynamicItemSpriteCompositor;
 
@@ -19,30 +17,22 @@ public sealed class ModEntry : Mod
     private static IMonitor? mon;
     internal static ItemSpriteManager manager = null!;
     internal static ModConfigHelper config = null!;
-
-    internal static IExtraMachineConfigApi? EMC = null;
+    internal static ModSpritePicker picker = null!;
 
     public override void Entry(IModHelper helper)
     {
         mon = Monitor;
+
+        if (ItemSpriteManager.Make(helper) is not ItemSpriteManager mngr)
+        {
+            return;
+        }
+
+        manager = mngr;
         config = new(helper, ModManifest);
-        manager = new(helper);
-
-        helper.Events.GameLoop.GameLaunched += OnGameLaunched;
-    }
-
-    private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
-    {
-        try
-        {
-            EMC = Helper.ModRegistry.GetApi<IExtraMachineConfigApi>("selph.ExtraMachineConfig");
-        }
-        catch (Exception ex)
-        {
-            Log($"Failed to get 'selph.ExtraMachineConfig' API:\n{ex}", LogLevel.Warn);
-            EMC = null;
-        }
-        config.SetupGMCM(manager.spritePicker);
+        picker = new(helper, config, manager.modDataAssets, manager.UpdateCompTxForQId);
+        DynamicMethods.Make();
+        Patches.Register();
     }
 
     /// <summary>SMAPI static monitor Log wrapper</summary>
