@@ -1,19 +1,22 @@
 using HarmonyLib;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
+using StardewValley;
 using StardewValley.Objects;
 
 namespace DynamicItemSpriteCompositor.Framework;
 
 internal static class Patches
 {
-    internal static bool ItemMetadata_SetTypeDefinition_Postfix_Enabled { get; set; } = true;
-
     internal static void Register()
     {
         Harmony harmony = new(ModEntry.ModId);
         try
         {
+            harmony.Patch(
+                original: AccessTools.DeclaredMethod(typeof(Item), nameof(Item.ResetParentSheetIndex)),
+                postfix: new HarmonyMethod(typeof(Patches), nameof(Item_ResetParentSheetIndex_Postfix))
+            );
             HarmonyMethod drawPrefix = new(typeof(Patches), nameof(SObject_draw_Prefix)) { priority = Priority.First };
             HarmonyMethod drawPostfix = new(typeof(Patches), nameof(SObject_draw_Postfix)) { priority = Priority.Last };
             // SObject
@@ -75,34 +78,58 @@ internal static class Patches
         }
     }
 
-    private static readonly HashSet<SObject> ObjectsCheckedThisDraw = [];
-
-    private static void SObject_draw_Prefix(SObject __instance, ref List<(SObject, ItemSpriteIndexHolder?)> __state)
+    private static void Item_ResetParentSheetIndex_Postfix(Item __instance)
     {
-        __state = [];
-        for (SObject curr = __instance; curr != null; curr = curr.heldObject.Value)
+        ModEntry.manager.ReapplyWatchedSpriteIndex(__instance);
+    }
+
+    private static void SObject_draw_Prefix(
+        SObject __instance,
+        ref (ItemSpriteIndexHolder?, ItemSpriteIndexHolder?)? __state
+    )
+    {
+        __state = null;
+
+        ItemSpriteIndexHolder? holder = null;
+        if (__instance is not Furniture)
         {
-            if (ObjectsCheckedThisDraw.Contains(curr))
-            {
-                continue;
-            }
-            ObjectsCheckedThisDraw.Add(curr);
-            if (!ModEntry.manager.EnsureSpriteIndexForThisDraw(curr, out ItemSpriteIndexHolder? holder))
-            {
-                __state.Add(new(curr, null));
-                continue;
-            }
-            __state.Add(new(curr, holder));
-            holder.SetDrawParsedItemData(curr);
+            holder = GetAndApplyHolder(__instance);
+        }
+
+        ItemSpriteIndexHolder? heldHolder = null;
+        if (__instance.heldObject.Value is SObject heldObj && heldObj is not ColoredObject)
+        {
+            heldHolder = GetAndApplyHolder(heldObj);
+        }
+
+        if (holder != null || heldHolder != null)
+        {
+            __state = new(holder, heldHolder);
         }
     }
 
-    private static void SObject_draw_Postfix(ref List<(SObject, ItemSpriteIndexHolder?)> __state)
+    private static ItemSpriteIndexHolder? GetAndApplyHolder(SObject obj)
     {
-        foreach ((SObject curr, ItemSpriteIndexHolder? holder) in __state)
+        if (ModEntry.manager.EnsureSpriteIndexForThisDraw(obj, out ItemSpriteIndexHolder? holder))
         {
-            holder?.UnsetDrawParsedItemData(curr);
-            ObjectsCheckedThisDraw.Remove(curr);
+            holder.SetDrawParsedItemData(obj);
+        }
+        else
+        {
+            holder = null;
+        }
+        return holder;
+    }
+
+    private static void SObject_draw_Postfix(
+        SObject __instance,
+        ref (ItemSpriteIndexHolder?, ItemSpriteIndexHolder?)? __state
+    )
+    {
+        if (__state != null)
+        {
+            __state.Value.Item1?.UnsetDrawParsedItemData(__instance);
+            __state.Value.Item2?.UnsetDrawParsedItemData(__instance.heldObject.Value);
         }
     }
 }

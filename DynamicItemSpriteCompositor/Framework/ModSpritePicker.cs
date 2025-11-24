@@ -621,7 +621,7 @@ internal sealed class ModSpritePicker : IClickableMenu
         foreach ((string key, ItemSpriteRuleAtlas ruleAtlas) in modRuleAtlas)
         {
             if (
-                ItemSpriteManager.SafeResolveMetadata(ruleAtlas.QualifiedItemId)?.GetParsedData()
+                ItemRegistry.GetMetadata(ruleAtlas.QualifiedItemId)?.GetParsedData()
                 is not ParsedItemData parsedItemData
             )
             {

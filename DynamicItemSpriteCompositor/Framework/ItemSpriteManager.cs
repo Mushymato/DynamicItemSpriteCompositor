@@ -127,22 +127,6 @@ internal sealed class ItemSpriteManager
         }
     }
 
-    internal static ItemMetadata? SafeResolveMetadata(string qualifiedItemId)
-    {
-        Patches.ItemMetadata_SetTypeDefinition_Postfix_Enabled = false;
-        ItemMetadata metadata = ItemRegistry.ResolveMetadata(qualifiedItemId);
-        Patches.ItemMetadata_SetTypeDefinition_Postfix_Enabled = true;
-        return metadata;
-    }
-
-    // internal static string SafeGetQualifiedItemId(Item item)
-    // {
-    //     Patches.ItemMetadata_ParentSheetIndex_Enabled = false;
-    //     string qualifiedItemId = item.QualifiedItemId;
-    //     Patches.ItemMetadata_ParentSheetIndex_Enabled = true;
-    //     return qualifiedItemId;
-    // }
-
     private bool TryGetItemSpriteCompForQualifiedItemId(
         string qualifiedItemId,
         [NotNullWhen(true)] out ItemSpriteComp? itemSpriteComp,
@@ -151,7 +135,7 @@ internal sealed class ItemSpriteManager
     {
         itemSpriteComp = null;
         if (
-            SafeResolveMetadata(qualifiedItemId) is not ItemMetadata itemMetadata
+            ItemRegistry.ResolveMetadata(qualifiedItemId) is not ItemMetadata itemMetadata
             || itemMetadata.QualifiedItemId == null
         )
         {
@@ -180,14 +164,12 @@ internal sealed class ItemSpriteManager
 
         if (itemSpriteComp.IsValid)
         {
-            // itemSpriteComp.FixAdditionalMetadata(itemMetadata);
             return true;
         }
 
         if (itemSpriteComp.IsDataValid && !itemSpriteComp.IsCompTxValid)
         {
             itemSpriteComp.UpdateCompTx();
-            // itemSpriteComp.FixAdditionalMetadata(itemMetadata);
             return true;
         }
 
@@ -390,12 +372,25 @@ internal sealed class ItemSpriteManager
         return false;
     }
 
+    internal void ReapplyWatchedSpriteIndex(Item item)
+    {
+        if (watchedItems.TryGetValue(item, out ItemSpriteIndexHolder? holder))
+        {
+            holder.NeedReapplyNextDraw = true;
+        }
+    }
+
     internal bool EnsureSpriteIndexForThisDraw(SObject obj, [NotNullWhen(true)] out ItemSpriteIndexHolder? holder)
     {
         if (watchedItems.TryGetValue(obj, out holder))
         {
+            if (!holder.ShouldSetDrawParsedItemData())
+            {
+                holder = null;
+                return false;
+            }
             if (
-                DynamicMethods.Item_get_contextTagsDirty(obj)
+                holder.NeedReapply(obj)
                 && TryGetItemSpriteCompForQualifiedItemId(obj.QualifiedItemId, out ItemSpriteComp? itemSpriteComp)
             )
             {
@@ -403,14 +398,10 @@ internal sealed class ItemSpriteManager
             }
             return true;
         }
-        else if (
-            TryGetItemSpriteCompForQualifiedItemId(obj.QualifiedItemId, out ItemSpriteComp? itemSpriteComp)
-            && ApplyDynamicSpriteIndex(obj, itemSpriteComp, out holder)
-        )
+        else if (TryGetItemSpriteCompForQualifiedItemId(obj.QualifiedItemId, out ItemSpriteComp? itemSpriteComp))
         {
-            return true;
+            return ApplyDynamicSpriteIndex(obj, itemSpriteComp, out holder);
         }
-        watchedItems.Remove(obj);
         return false;
     }
 }

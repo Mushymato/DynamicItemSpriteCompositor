@@ -1,7 +1,10 @@
 global using SObject = StardewValley.Object;
 using System.Diagnostics;
 using DynamicItemSpriteCompositor.Framework;
+using Microsoft.Xna.Framework;
 using StardewModdingAPI;
+using StardewValley;
+using StardewValley.Extensions;
 
 namespace DynamicItemSpriteCompositor;
 
@@ -33,7 +36,33 @@ public sealed class ModEntry : Mod
         picker = new(helper, config, manager.modDataAssets, manager.UpdateCompTxForQId);
         DynamicMethods.Make();
         Patches.Register();
+
+#if DEBUG
+        helper.ConsoleCommands.Add("jelly", "jelly", ConsoleJelly);
     }
+
+    private void ConsoleJelly(string arg1, string[] arg2)
+    {
+        xTile.Layers.Layer layer = Game1.currentLocation.Map.RequireLayer("Back");
+        for (int x = 0; x < layer.LayerWidth; x++)
+        {
+            for (int y = 0; y < layer.LayerHeight; y++)
+            {
+                Vector2 pos = new(x, y);
+                if (layer.Tiles[x, y] is null)
+                    continue;
+                // SObject jelly = ItemRegistry.Create<SObject>("(O)344", 1);
+                if (Utility.CreateFlavoredItem("Jelly", "(O)613") is SObject jelly)
+                {
+                    Game1.currentLocation.objects.Remove(pos);
+                    Game1.currentLocation.objects.Add(pos, jelly);
+                }
+            }
+        }
+    }
+#else
+    }
+#endif
 
     /// <summary>SMAPI static monitor Log wrapper</summary>
     /// <param name="msg"></param>
