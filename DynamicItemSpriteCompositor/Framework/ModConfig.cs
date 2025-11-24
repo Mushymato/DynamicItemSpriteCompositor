@@ -36,16 +36,7 @@ public sealed class ModConfigHelper(IModHelper helper, IManifest mod)
             );
             return;
         }
-        gmcm.Register(
-            mod,
-            () =>
-            {
-                Data = helper.ReadConfig<ModConfigData>();
-                LoadContentPackTextureOptions(picker.modDataHolders);
-            },
-            () => SaveContentPackTextureOptions(picker.modDataHolders),
-            titleScreenOnly: false
-        );
+        gmcm.Register(mod, () => { }, () => { }, titleScreenOnly: false);
         gmcm.AddComplexOption(
             mod,
             () => string.Empty,
@@ -55,7 +46,10 @@ public sealed class ModConfigHelper(IModHelper helper, IManifest mod)
         );
     }
 
-    internal void LoadContentPackTextureOptions(IEnumerable<ModProidedDataHolder> modDataHolders)
+    internal void LoadContentPackTextureOptions(
+        IEnumerable<ModProidedDataHolder> modDataHolders,
+        Action<Dictionary<string, ItemSpriteRuleAtlas>>? DoWorkOnModRule
+    )
     {
         bool shouldWrite = false;
         Dictionary<string, Dictionary<string, TextureOption>> cpto = Data.ContentPackTextureOptions;
@@ -70,23 +64,23 @@ public sealed class ModConfigHelper(IModHelper helper, IManifest mod)
             {
                 continue;
             }
-            if (!cpto.TryGetValue(holder.Mod.UniqueID, out Dictionary<string, TextureOption>? innerDict))
+            if (cpto.TryGetValue(holder.Mod.UniqueID, out Dictionary<string, TextureOption>? innerDict))
             {
-                continue;
-            }
-            foreach ((string key, ItemSpriteRuleAtlas ruleAtlas) in modRuleAtlas)
-            {
-                if (innerDict.TryGetValue(key, out TextureOption? option))
+                foreach ((string key, ItemSpriteRuleAtlas ruleAtlas) in modRuleAtlas)
                 {
-                    ruleAtlas.Enabled = option.Enabled;
-                    ruleAtlas.ChosenIdx = ruleAtlas.SourceTextures.IndexOf(option.Texture);
-                    if (ruleAtlas.ChosenIdx < 0)
+                    if (innerDict.TryGetValue(key, out TextureOption? option))
                     {
-                        ruleAtlas.ChosenIdx = 0;
-                        shouldWrite = true;
+                        ruleAtlas.Enabled = option.Enabled;
+                        ruleAtlas.ChosenIdx = ruleAtlas.SourceTextures.IndexOf(option.Texture);
+                        if (ruleAtlas.ChosenIdx < 0)
+                        {
+                            ruleAtlas.ChosenIdx = 0;
+                            shouldWrite = true;
+                        }
                     }
                 }
             }
+            DoWorkOnModRule?.Invoke(modRuleAtlas);
         }
         if (shouldWrite)
             helper.WriteConfig(Data);

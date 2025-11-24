@@ -756,7 +756,7 @@ internal sealed class ModSpritePicker : IClickableMenu
     {
         if (CurrentMod == null)
         {
-            config.LoadContentPackTextureOptions(this.modDataHolders);
+            config.LoadContentPackTextureOptions(this.modDataHolders, null);
             NextMod();
         }
 
