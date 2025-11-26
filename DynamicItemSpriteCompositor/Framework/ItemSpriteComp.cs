@@ -113,7 +113,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
                 break;
         }
 
-        int maxIdx = spritePerIndex;
+        int maxIdx = 0;
         // recomp: comp tx marked invalid/did not have spriteRuleAtlasList before/got different counts
         bool needTextureRecomp =
             !IsCompTxValid
@@ -224,7 +224,6 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         ModEntry.LogDebug($"Comp: {compTx.Width}x{compTx.Height}");
 
         List<Texture2D> sourceTextures = [];
-        sourceTextures.Add(content.Load<Texture2D>(baseTextureAsset));
         foreach (ItemSpriteRuleAtlas spriteAtlas in spriteRuleAtlasList)
         {
             sourceTextures.Add(content.Load<Texture2D>(spriteAtlas.ChosenSourceTexture.SourceTextureAsset));
@@ -232,23 +231,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         Color[] sourceData = new Color[sourceTextures.Max(tx => tx.GetElementCount())];
         Texture2D sourceTx = sourceTextures[0];
 
-        // vanilla sprite
-        ModEntry.LogDebug($"Base: {baseTextureAsset}");
-        sourceTx.GetData(sourceData, 0, sourceTx.GetElementCount());
-        for (int i = 0; i < spritePerIndex; i++)
-        {
-            CopySourceSpriteToTarget(
-                ref sourceData,
-                sourceTx.Width,
-                this.baseSpriteIndex + i,
-                ref targetData,
-                compTx.Width,
-                i
-            );
-        }
-
-        // mod sprites
-        int txIdx = 1;
+        int txIdx = 0;
         foreach (ItemSpriteRuleAtlas spriteAtlas in spriteRuleAtlasList)
         {
             ModEntry.LogDebug($"Atlas: {spriteAtlas.ChosenSourceTexture.SourceTextureAsset}");
@@ -415,7 +398,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             }
         }
 
-        int spriteIndex = 0;
+        int spriteIndex = -1;
         if (validRules.Count > 0)
         {
             int minPrecedence = int.MaxValue;

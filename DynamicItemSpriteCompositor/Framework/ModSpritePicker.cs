@@ -426,8 +426,7 @@ internal sealed class ModSpritePicker : IClickableMenu
             );
         }
 
-        Game1.mouseCursorTransparency = 1f;
-        drawMouse(b);
+        drawMouse(b, ignore_transparency: true);
     }
 
     public override void receiveLeftClick(int x, int y, bool playSound = true)

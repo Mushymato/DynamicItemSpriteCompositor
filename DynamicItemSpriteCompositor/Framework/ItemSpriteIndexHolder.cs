@@ -6,7 +6,7 @@ internal sealed record ItemSpriteIndexHolder()
 {
     internal ItemSpriteComp? Comp { get; private set; } = null;
     internal bool NeedReapplyNextDraw = false;
-    private int spriteIndexPicked = 0;
+    private int spriteIndexPicked = -1;
     private int spriteIndexReal = -1;
 
     internal static ItemSpriteIndexHolder Make(Item item) => new();
@@ -19,7 +19,7 @@ internal sealed record ItemSpriteIndexHolder()
 
     internal void SetDrawParsedItemData(Item item)
     {
-        if (spriteIndexReal != -1 || Comp == null)
+        if (spriteIndexReal != -1 || spriteIndexPicked == -1 || Comp == null)
             return;
         spriteIndexReal = item.ParentSheetIndex;
         int drawIndex = spriteIndexPicked + spriteIndexReal - Comp.baseSpriteIndex;
@@ -30,7 +30,7 @@ internal sealed record ItemSpriteIndexHolder()
 
     internal bool UnsetDrawParsedItemData(Item item)
     {
-        if (spriteIndexReal == -1 || Comp == null)
+        if (spriteIndexReal == -1 || spriteIndexPicked == -1 || Comp == null)
             return false;
         Comp.UnsetDrawParsedItemData(ItemRegistry.GetData(item.QualifiedItemId));
         item.ParentSheetIndex = spriteIndexReal;
