@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using DynamicItemSpriteCompositor.Models;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
+using StardewValley;
 using StardewValley.Extensions;
 
 namespace DynamicItemSpriteCompositor.Framework;
@@ -92,12 +93,11 @@ internal sealed record ModProidedDataHolder(IAssetName AssetName, IManifest Mod)
                     {
                         continue;
                     }
-                    IAssetName assetName = content.ParseAssetName(texture);
-                    if (!content.DoesAssetExist<Texture2D>(assetName))
+                    if (!Game1.content.DoesAssetExist<Texture2D>(texture))
                     {
                         continue;
                     }
-                    spriteAtlas.SourceTextureOptions.Add(new(texture, assetName));
+                    spriteAtlas.SourceTextureOptions.Add(new(texture, content.ParseAssetName(texture)));
                 }
                 if (!spriteAtlas.SourceTextureOptions.Any())
                 {

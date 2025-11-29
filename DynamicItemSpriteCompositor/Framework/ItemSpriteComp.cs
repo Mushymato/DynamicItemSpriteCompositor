@@ -17,18 +17,27 @@ public sealed record AtlasCtx(ItemSpriteRuleAtlas Atlas, Point TextureSize, Poin
     private Texture2D? srcTx;
     private Texture2D? compTx;
 
-    internal bool IsCompTxValid { get; set; } = false;
+    internal bool IsTxValid { get; set; } = false;
 
-    public Texture2D GetTexture(IGameContentHelper content)
+    public Texture2D GetTexture()
     {
-        srcTx ??= content.Load<Texture2D>(Atlas.ChosenSourceTexture.SourceTextureAsset);
+        if (IsTxValid)
+        {
+            if (TextureSize == Point.Zero)
+            {
+                return srcTx ??= Game1.content.Load<Texture2D>(Atlas.ChosenSourceTexture.Texture);
+            }
+            if (compTx != null)
+            {
+                return compTx;
+            }
+        }
+
+        srcTx = Game1.content.Load<Texture2D>(Atlas.ChosenSourceTexture.Texture);
         if (TextureSize == Point.Zero)
         {
+            IsTxValid = true;
             return srcTx;
-        }
-        if (IsCompTxValid && compTx != null)
-        {
-            return compTx;
         }
 
         compTx ??= new(Game1.graphics.GraphicsDevice, TextureSize.X, TextureSize.Y);
@@ -46,7 +55,7 @@ public sealed record AtlasCtx(ItemSpriteRuleAtlas Atlas, Point TextureSize, Poin
             for (int i = 0; i < spriteIndexRule.SpriteIndexList.Count; i++)
             {
                 int sourceIdx = spriteIndexRule.SpriteIndexList[i];
-                int targetIdx = spriteIndexRule.ActualSpriteIndexList[i];
+                int targetIdx = spriteIndexRule.SpriteIndexListAdjusted[i];
                 for (int j = 0; j < Atlas.SourceSpritePerIndex; j++)
                 {
                     CopySourceSpriteToTarget(
@@ -63,7 +72,7 @@ public sealed record AtlasCtx(ItemSpriteRuleAtlas Atlas, Point TextureSize, Poin
 
         compTx.SetData(targetData);
         compTx.Name = Atlas.ChosenSourceTexture.Texture;
-        IsCompTxValid = true;
+        IsTxValid = true;
 
         return compTx;
     }
@@ -103,7 +112,7 @@ public sealed record AtlasCtx(ItemSpriteRuleAtlas Atlas, Point TextureSize, Poin
     }
 }
 
-public sealed class ItemSpriteComp(IGameContentHelper content)
+public sealed class ItemSpriteComp()
 {
     internal const string CustomFields_SpritePerIndex = $"{ModEntry.ModId}/SpritePerIndex";
     private const int MAX_WIDTH = 4096;
@@ -201,7 +210,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             {
                 foreach (SpriteIndexRule spriteIndexRule in spriteAtlas.Rules)
                 {
-                    spriteIndexRule.SpriteIndexList = spriteIndexRule.ActualSpriteIndexList;
+                    spriteIndexRule.SpriteIndexListAdjusted = spriteIndexRule.SpriteIndexList;
                 }
                 newAtlasCtxList.Add(new(spriteAtlas, Point.Zero, spriteSize));
                 continue;
@@ -225,10 +234,10 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             int minIdx = remappedIdx.Values.Min();
             foreach (SpriteIndexRule spriteIndexRule in spriteAtlas.Rules)
             {
-                spriteIndexRule.ActualSpriteIndexList.Clear();
+                spriteIndexRule.SpriteIndexListAdjusted.Clear();
                 foreach (int idx in spriteIndexRule.SpriteIndexList)
                 {
-                    spriteIndexRule.ActualSpriteIndexList.Add(remappedIdx[idx] - minIdx);
+                    spriteIndexRule.SpriteIndexListAdjusted.Add(remappedIdx[idx] - minIdx);
                 }
             }
             int maxIdx = remappedIdx.Values.Max() - minIdx + spriteAtlas.SourceSpritePerIndex.Value + 1;
@@ -333,7 +342,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
                     && names.Contains(atlasCtx.Atlas.ChosenSourceTexture.SourceTextureAsset)
                 )
                 {
-                    atlasCtx.IsCompTxValid = false;
+                    atlasCtx.IsTxValid = false;
                     break;
                 }
             }
@@ -362,34 +371,39 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         }
 
         int spriteIndex = -1;
-        Texture2D? pickedTx = null;
+        Func<Texture2D>? pickedTxGetter = null;
         if (validRulesCtx.Count > 0)
         {
             int minPrecedence = int.MaxValue;
-            (SpriteIndexRule rule, AtlasCtx atlasCtx)? minPrecedencePair = null;
+            List<(SpriteIndexRule rule, AtlasCtx atlasCtx)> minPrecedencePairs = [];
             foreach ((SpriteIndexRule rule, AtlasCtx ctx) ruleCtx in validRulesCtx)
             {
-                if (ruleCtx.rule.Precedence < minPrecedence)
+                if (ruleCtx.rule.Precedence <= minPrecedence)
                 {
-                    minPrecedence = ruleCtx.rule.Precedence;
-                    minPrecedencePair = ruleCtx;
+                    if (ruleCtx.rule.Precedence < minPrecedence)
+                    {
+                        minPrecedencePairs.Clear();
+                        minPrecedence = ruleCtx.rule.Precedence;
+                    }
+                    minPrecedencePairs.Add(ruleCtx);
                 }
             }
-            if (minPrecedencePair is (SpriteIndexRule rule, AtlasCtx atlasCtx))
+            if (minPrecedencePairs.Any())
             {
+                (SpriteIndexRule rule, AtlasCtx atlasCtx) = Random.Shared.ChooseFrom(minPrecedencePairs);
                 int randIdx = Random.Shared.Next(
                     rule.IncludeDefaultSpriteIndex ? -1 : 0,
-                    rule.ActualSpriteIndexList.Count
+                    rule.SpriteIndexListAdjusted.Count
                 );
                 if (randIdx >= 0)
                 {
-                    spriteIndex = rule.ActualSpriteIndexList[randIdx];
-                    pickedTx = atlasCtx.GetTexture(content);
+                    spriteIndex = rule.SpriteIndexListAdjusted[randIdx];
+                    pickedTxGetter = atlasCtx.GetTexture;
                 }
             }
         }
 
-        holder.Apply(this, spriteIndex, pickedTx);
+        holder.Apply(this, spriteIndex, pickedTxGetter);
     }
 
     internal void UpdateCompTx(ItemSpriteRuleAtlas ruleAtlas)
@@ -400,7 +414,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         {
             if (atlasCtx.Atlas == ruleAtlas)
             {
-                atlasCtx.IsCompTxValid = false;
+                atlasCtx.IsTxValid = false;
             }
         }
     }
@@ -423,7 +437,7 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             {
                 string pngName =
                     $"{SanitizePath(string.Concat(Path.GetFileName(atlasCtx.Atlas.SourceModAsset.Name), '-', atlasCtx.Atlas.Key))}.png";
-                using Texture2D exported = UnPremultiplyTransparency(atlasCtx.GetTexture(content));
+                using Texture2D exported = UnPremultiplyTransparency(atlasCtx.GetTexture());
                 using Stream stream = File.Create(Path.Combine(exportDir, subDir, pngName));
                 exported.SaveAsPng(stream, exported.Width, exported.Height);
                 ModEntry.Log($"- {subDir}/{pngName}", LogLevel.Info);

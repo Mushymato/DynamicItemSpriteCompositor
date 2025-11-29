@@ -1,6 +1,6 @@
 # Author Guide
 
-This document describes how to make a content pack for DISCO.
+This document describes how to make a content pack for DISCO (Dynamic Item Sprite Compositor).
 
 ## Dependencies
 
@@ -8,7 +8,7 @@ Although DISCO content packs are simply content patcher mods, they must DISCO as
 
 Conversely, avoid putting DISCO as a dependency unless you intend to use it directly in the mod.
 
-This is used by DISCO to initialize the base asset instance for the content pack to edit. If a content pack does not do this, then DISCO ignores it completely.
+This is used by DISCO to initialize the base data asset instance for the content pack to edit. If a content pack does not do this, then DISCO ignores it completely.
 
 ## Model
 
@@ -24,7 +24,9 @@ Since the asset name is already your mod id, there's no real need to make the ke
 | ----- | ---- | ------- | ----- |
 | `TypeIdentifier` | string | `"(O)"` | This is the type identifier part of a qualified item id (e.g. `(O)0`). Currently, only `(O)` and `(BC)` are supported. |
 | `LocalItemId` | string | `"0"` | This is the item id part of a qualified item id (e.g. `(O)0`). |
-| `SourceTextures` | List<string> | _null_ | Source texture asset, where your sprites are on. You can give multiple source texture options here, and DISCO will allow players to choose which option they want to use via in-game configuration menu. Comma separated strings are accepted, which also mean you can put content patcher tokens here too. |
+| `ConfigName` | string | _null_ | A user friendly name for this entry to display on the config menu. Defaults to the base item name when not given. |
+| `ConfigIconSpriteIndex` | string | _null_ | The primary sprite to display in the configuration menu, When not given, the lowest index defined across the rules for this atlas will be used. |
+| `SourceTextures` | List<string> | _null_ | Source textures where your sprites are on. You can give multiple source texture options here, and DISCO will allow players to choose which option they want to use via in-game configuration menu. Comma separated strings are accepted, which also mean you can put content patcher tokens here too. |
 | `SourceSpritePerIndex` | uint | _null_ | This is used to set your expected sprite per index for the given source texture, must be 1 or greater. See [this section](#sprite-per-index) for more details. |
 | `Rules` | List<**SpriteIndexRule**> | List of rules used to pick dynamic sprite index. |
 
@@ -45,36 +47,51 @@ Since the asset name is already your mod id, there's no real need to make the ke
 | `Preserve` | **SpriteIndexReqs** | _null_ | This is an extra set of requirements to apply on the preserve item that grants the flavor. Most flavored items are also colored objects so simply checking `RequiredColor` can be enough, but this covers edge cases such as honey. If a rule has both `HeldObject` and `Preserve`, the preserve item being checked will be the held object's preserve item instead. |
 | `SpriteIndexList` | List<int> | _empty_ | List of sprite indicies on your source texture that will be assigned when this rule matches. You can use comma separated list of numbers, or just a single number. |
 | `IncludeDefaultSpriteIndex` | bool | false | If true, include the default sprite index in the list when picking. |
-| `Precedence` | int | *varies* | This adjusts whether this rule applies before other rules, lower is more prioritized. The default value depends on whether you have set other requirements. |
+| `Precedence` | int | *varies* | This adjusts whether this rule applies before other rules, lower is more prioritized. The default value depends on the requirements you have set. |
 
 ## How does it pick index?
 
-DISCO does not patch draw logic and instead operate directly on the data.
-
-When an item is created, DISCO will combine the **ItemSpriteRuleAtlas** entries provided by every content pack and find the ones that apply to the given item.
-Then, DISCO creates a special composite texture that combines the original sprite plus every content pack sprite based on the **ItemSpriteRuleAtlas** entries, and calculates a sprite index offset for every sprite involved.
-This special composite texture becomes the item's new texture (shared across all instances of this item), and the final sprite index is picked based on the **SpriteIndexRule** list given.
-
-There is a limitation here. If a particular place in question doesn't use `ParsedItemData` to get texture, then the changed texture won't propagate over. This mainly impacts mods that don't use `Item.draw` or `Item.drawInMenu` to display items.
+Whenever an item is created and attempted to be drawn for the first time, DISCO will look at whether it has any DISCO data and whether it matches any rules:
 
 When an item pass all requirements on a single **SpriteIndexRule**, it will get a random sprite index from the `SpriteIndexList`.
-When an item pass all requirements on multiple **SpriteIndexRule** entries, only the **SpriteIndexRule** with lowest `Precedence` out of the matching rules are considered. The sprite index is picked with equal chance from all matching rules combined.
+When an item pass all requirements on multiple **SpriteIndexRule** entries, only the **SpriteIndexRule** with lowest `Precedence` out of the matching rules are considered.
+In case where there are multiple matching **SpriteIndexRule** entries with equal and lowest `Precedence`, one random rule is picked, followed by random sprite index from that rule.
 
 The sprite indexes are force rechecked in 2 situations:
 - Save loaded (all items in the world will be rechecked)
 - Relevant assets invalidated (relevant watched items will be rechecked)
 
-To debug any unexpected behavior, use console command `disco-export` to save the combined **ItemSpriteRuleAtlas** data and the special composite texture to DISCO's mod folder.
+To debug any unexpected behavior, use console command `disco-export` to save the combined **ItemSpriteRuleAtlas** data and relevant textures to DISCO's mod folder.
+
+### Default Precedences
+
+The default precedence is decided like this:
+- If `RequiredContextTags` is set: -100
+- Else if `RequiredColor` is set: -50
+- Else if `RequiredCondition` is set: -20
+
+When using `Preserve`, a precedence bonus is added:
+    - If `RequiredContextTags` is set: -20
+    - Else if `RequiredColor` is set: -10
+    - Else if `RequiredCondition` is set: -4
+
+When using `HeldObject`, a precedence bonus is added:
+    - If `RequiredContextTags` is set: -10
+    - Else if `RequiredColor` is set: -5
+    - Else if `RequiredCondition` is set: -2
+
+If a precedence is set by content pack, then none of these apply and the content pack given value is used as is.
 
 ## Sprite Per Index
 
-Sometimes, an item may have more than 1 sprite per index. A common example is colored objects, which can have 2 sprites per index (base and color mask). 
-
+Sometimes, an item may have more than 1 sprite per index.
+A common example is colored objects, which can have 2 sprites per index (base and color mask). 
 In this case, your sprite sheet should match this format and also have 2 sprites, a base and a color mask, then use the index of the first sprite in the `SpriteIndexList`.
-If you don't care about the color mask sprite, then instead you can give a `SourceSpritePerIndex` value of 1, which will make DISCO automatically put in a transparent second sprite for you.
+
+If you don't care about the color mask sprite, then instead you can give a `SourceSpritePerIndex` value of 1, which will make DISCO automatically generate a new sprite where the 2nd sprite is transparent. You can see this generated texture by using `disco-export`. There is a minor performance cost to doing this recomposing at runtime, so feel free to take the exported PNG file and use it directly in your content pack.
+
 When you are using `SourceSpritePerIndex`, you cannot have 2 index whose difference is less than `SourceSpritePerIndex`. Intuitively, this is checking for no overlapping among the sprites given.
 
-Regardless of whether you are using `SourceSpritePerIndex` or not, the sprite indicies you give in `SpriteIndexList` should always be relative to the sprite's position on the source texture asset.
+Regardless of whether you are using `SourceSpritePerIndex` or not, the sprite indicies you give in `SpriteIndexList` should always be relative to the source texture asset.
 
-DISCO tries to determine most common cases of sprite per index. Most hardcoded cases are added to `Data/Objects`/`Data/BigCraftables` as the custom field `"mushymato.DISCO/SpritePerIndex"`. You may edit this field yourself as needed, but for vanilla objects it's best to make a report.
-
+DISCO tries to determine most common cases of sprite per index. Most hardcoded cases are added to `Data/Objects`/`Data/BigCraftables` as the custom field `"mushymato.DISCO/SpritePerIndex"`. You may edit this field yourself as needed, but for vanilla objects it's best to make a bug report so that it can be added for everyone.

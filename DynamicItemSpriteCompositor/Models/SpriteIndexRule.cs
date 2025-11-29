@@ -39,12 +39,12 @@ public sealed class SpriteIndexRule : SpriteIndexReqs
 {
     [JsonConverter(typeof(StringIntListConverter))]
     public List<int> SpriteIndexList { get; set; } = [];
-    internal List<int> ActualSpriteIndexList { get; set; } = [];
     public bool IncludeDefaultSpriteIndex { get; set; } = false;
 
     public SpriteIndexReqs? HeldObject;
     public SpriteIndexReqs? Preserve;
 
+    public List<int> SpriteIndexListAdjusted { get; internal set; } = [];
     private int? precedence = null;
     public int Precedence
     {

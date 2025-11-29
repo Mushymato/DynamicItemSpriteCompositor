@@ -89,7 +89,7 @@ internal sealed class ItemSpriteManager
         }
     }
 
-    internal void UpdateCompTxForQId(ItemSpriteRuleAtlas ruleAtlas, bool enabledStatusChanged)
+    internal void UpdateCompTxForAtlas(ItemSpriteRuleAtlas ruleAtlas, bool enabledStatusChanged)
     {
         if (TryGetItemSpriteCompForQualifiedItemId(ruleAtlas.QualifiedItemId, out ItemSpriteComp? itemSpriteComp))
         {
@@ -153,7 +153,7 @@ internal sealed class ItemSpriteManager
         {
             if (makeNewIfNotFound)
             {
-                itemSpriteComp = new ItemSpriteComp(helper.GameContent);
+                itemSpriteComp = new ItemSpriteComp();
                 qIdToComp[qualifiedItemId] = itemSpriteComp;
             }
             else

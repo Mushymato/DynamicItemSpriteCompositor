@@ -33,7 +33,7 @@ public sealed class ModEntry : Mod
 
         manager = mngr;
         config = new(helper, ModManifest);
-        picker = new(helper, config, manager.modDataAssets, manager.UpdateCompTxForQId);
+        picker = new(helper, config, manager.modDataAssets, manager.UpdateCompTxForAtlas);
         DynamicMethods.Make();
         Patches.Register();
 
