@@ -105,6 +105,7 @@ internal sealed record ModProidedDataHolder(IAssetName AssetName, IManifest Mod)
                     invalidKeys.Add(key);
                     continue;
                 }
+                spriteAtlas.Key = key;
                 spriteAtlas.SourceModAsset = AssetName;
 
                 string thisQId = spriteAtlas.QualifiedItemId;

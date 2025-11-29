@@ -89,16 +89,16 @@ internal sealed class ItemSpriteManager
         }
     }
 
-    internal void UpdateCompTxForQId(string qualifiedItemId, bool enabledStatusChanged)
+    internal void UpdateCompTxForQId(ItemSpriteRuleAtlas ruleAtlas, bool enabledStatusChanged)
     {
-        if (TryGetItemSpriteCompForQualifiedItemId(qualifiedItemId, out ItemSpriteComp? itemSpriteComp))
+        if (TryGetItemSpriteCompForQualifiedItemId(ruleAtlas.QualifiedItemId, out ItemSpriteComp? itemSpriteComp))
         {
-            itemSpriteComp.UpdateCompTx();
+            itemSpriteComp.UpdateCompTx(ruleAtlas);
             if (enabledStatusChanged)
             {
                 foreach ((Item item, _) in watchedItems)
                 {
-                    if (item.QualifiedItemId == qualifiedItemId)
+                    if (item.QualifiedItemId == ruleAtlas.QualifiedItemId)
                     {
                         ApplyDynamicSpriteIndex(item, itemSpriteComp, out _);
                     }
@@ -107,7 +107,7 @@ internal sealed class ItemSpriteManager
         }
         else
         {
-            RemoveWatchedItemsByQId(qualifiedItemId);
+            RemoveWatchedItemsByQId(ruleAtlas.QualifiedItemId);
         }
     }
 
@@ -162,14 +162,8 @@ internal sealed class ItemSpriteManager
             }
         }
 
-        if (itemSpriteComp.IsValid)
+        if (itemSpriteComp.IsDataValid)
         {
-            return true;
-        }
-
-        if (itemSpriteComp.IsDataValid && !itemSpriteComp.IsCompTxValid)
-        {
-            itemSpriteComp.UpdateCompTx();
             return true;
         }
 

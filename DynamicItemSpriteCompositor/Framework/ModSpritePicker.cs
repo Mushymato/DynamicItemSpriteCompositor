@@ -206,7 +206,7 @@ internal sealed class ModSpritePicker : IClickableMenu
     private readonly IModHelper helper;
     private readonly ModConfigHelper config;
     internal readonly List<ModProidedDataHolder> modDataHolders;
-    private readonly Action<string, bool> updateForQId;
+    private readonly Action<ItemSpriteRuleAtlas, bool> updateForRuleAtlas;
 
     private int CurrentModIdx
     {
@@ -238,7 +238,7 @@ internal sealed class ModSpritePicker : IClickableMenu
         IModHelper helper,
         ModConfigHelper config,
         Dictionary<IAssetName, ModProidedDataHolder> modDataAssets,
-        Action<string, bool> updateForQId
+        Action<ItemSpriteRuleAtlas, bool> updateForRuleAtlas
     )
         : base(
             Game1.viewport.X + 96,
@@ -251,7 +251,7 @@ internal sealed class ModSpritePicker : IClickableMenu
         this.helper = helper;
         this.config = config;
         this.modDataHolders = modDataAssets.Values.ToList();
-        this.updateForQId = updateForQId;
+        this.updateForRuleAtlas = updateForRuleAtlas;
 
         Mod_L.BaseX = 0;
         Mod_L.BaseY = -64 - PADDING;
@@ -302,10 +302,12 @@ internal sealed class ModSpritePicker : IClickableMenu
                     PaddingY = PADDING / 2,
                     myID = myID,
                     upNeighborID = row > 0 ? myID - TEXTURE_COL_CNT : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
-                    leftNeighborID = col > 0 ? myID - 1 : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
-                    rightNeighborID = col < TEXTURE_COL_CNT - 1 ? myID + 1 : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
+                    upNeighborImmutable = true,
+                    leftNeighborID = col > 0 ? myID - 1 : ClickableComponent.ID_ignore,
+                    rightNeighborID = col < TEXTURE_COL_CNT - 1 ? myID + 1 : ClickableComponent.ID_ignore,
                     downNeighborID =
                         row < TEXTURE_ROW_CNT ? myID + TEXTURE_COL_CNT : ClickableComponent.CUSTOM_SNAP_BEHAVIOR,
+                    downNeighborImmutable = true,
                 }
             );
         }
@@ -460,14 +462,14 @@ internal sealed class ModSpritePicker : IClickableMenu
                 if (index < 0)
                 {
                     ruleAtlas.Enabled = false;
-                    updateForQId(ruleAtlas.QualifiedItemId, true);
+                    updateForRuleAtlas(ruleAtlas, true);
                 }
                 else if (index != ruleAtlas.ChosenIdx || !ruleAtlas.Enabled)
                 {
                     bool enabledStatusChanged = !ruleAtlas.Enabled;
                     ruleAtlas.Enabled = true;
                     ruleAtlas.ChosenIdx = index;
-                    updateForQId(ruleAtlas.QualifiedItemId, enabledStatusChanged);
+                    updateForRuleAtlas(ruleAtlas, enabledStatusChanged);
                 }
                 atlasPickDisplay.UpdateIconCurrent();
                 Game1.playSound("smallSelect");
@@ -516,10 +518,47 @@ internal sealed class ModSpritePicker : IClickableMenu
 
     public override void receiveScrollWheelAction(int direction)
     {
+        ScrollGrid(direction);
+        base.receiveScrollWheelAction(direction);
+    }
+
+    protected override void customSnapBehavior(int direction, int oldRegion, int oldID)
+    {
+        if (AtlasCurrIdx == -1)
+        {
+            if (oldID >= 100 && oldID < 100 + ATLAS_COL_CNT)
+            {
+                this.ScrollGrid(1);
+                return;
+            }
+            else if (oldID >= 100 + ATLAS_COL_CNT * (ATLAS_ROW_CNT - 1))
+            {
+                this.ScrollGrid(-1);
+                return;
+            }
+        }
+        else
+        {
+            if (oldID >= 200 && oldID < 200 + TEXTURE_COL_CNT)
+            {
+                this.ScrollGrid(1);
+                return;
+            }
+            else if (oldID >= 200 + TEXTURE_COL_CNT * (TEXTURE_ROW_CNT - 1))
+            {
+                this.ScrollGrid(-1);
+                return;
+            }
+        }
+        base.customSnapBehavior(direction, oldRegion, oldID);
+    }
+
+    public bool ScrollGrid(int direction)
+    {
         bool scrolled = false;
         if (AtlasCurrIdx == -1)
         {
-            if (direction > 0 && AtlasPicksDisplayIdx > 0)
+            if (direction > 0 && AtlasPicksDisplayIdx >= ATLAS_COL_CNT)
             {
                 AtlasPicksDisplayIdx -= ATLAS_COL_CNT;
                 scrolled = true;
@@ -550,6 +589,7 @@ internal sealed class ModSpritePicker : IClickableMenu
         {
             Game1.playSound("shiny4");
         }
+        return scrolled;
     }
 
     public override bool readyToClose()

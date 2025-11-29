@@ -12,28 +12,109 @@ using StardewValley.ItemTypeDefinitions;
 
 namespace DynamicItemSpriteCompositor.Framework;
 
+public sealed record AtlasCtx(ItemSpriteRuleAtlas Atlas, Point TextureSize, Point SpriteSize)
+{
+    private Texture2D? srcTx;
+    private Texture2D? compTx;
+
+    internal bool IsCompTxValid { get; set; } = false;
+
+    public Texture2D GetTexture(IGameContentHelper content)
+    {
+        srcTx ??= content.Load<Texture2D>(Atlas.ChosenSourceTexture.SourceTextureAsset);
+        if (TextureSize == Point.Zero)
+        {
+            return srcTx;
+        }
+        if (IsCompTxValid && compTx != null)
+        {
+            return compTx;
+        }
+
+        compTx ??= new(Game1.graphics.GraphicsDevice, TextureSize.X, TextureSize.Y);
+
+        Color[] targetData = new Color[compTx.GetElementCount()];
+        Array.Fill(targetData, Color.Transparent);
+        ModEntry.LogDebug($"Comp: {compTx.Width}x{compTx.Height}");
+
+        Color[] sourceData = new Color[srcTx.GetElementCount()];
+        ModEntry.LogDebug($"Atlas: {Atlas.ChosenSourceTexture.SourceTextureAsset}");
+        srcTx.GetData(sourceData, 0, srcTx.GetElementCount());
+
+        foreach (SpriteIndexRule spriteIndexRule in Atlas.Rules)
+        {
+            for (int i = 0; i < spriteIndexRule.SpriteIndexList.Count; i++)
+            {
+                int sourceIdx = spriteIndexRule.SpriteIndexList[i];
+                int targetIdx = spriteIndexRule.ActualSpriteIndexList[i];
+                for (int j = 0; j < Atlas.SourceSpritePerIndex; j++)
+                {
+                    CopySourceSpriteToTarget(
+                        ref sourceData,
+                        srcTx.Width,
+                        sourceIdx + j,
+                        ref targetData,
+                        compTx.Width,
+                        targetIdx + j
+                    );
+                }
+            }
+        }
+
+        compTx.SetData(targetData);
+        compTx.Name = Atlas.ChosenSourceTexture.Texture;
+        IsCompTxValid = true;
+
+        return compTx;
+    }
+
+    private Rectangle GetSourceRectForIndex(int width, int index) =>
+        ItemSpriteComp.GetSourceRectForIndex(width, index, SpriteSize);
+
+    private void CopySourceSpriteToTarget(
+        ref Color[] sourceData,
+        int sourceTxWidth,
+        int sourceIdx,
+        ref Color[] targetData,
+        int targetTxWidth,
+        int targetIdx
+    )
+    {
+        Rectangle sourceRect = GetSourceRectForIndex(sourceTxWidth, sourceIdx);
+        Rectangle targetRect = GetSourceRectForIndex(targetTxWidth, targetIdx);
+
+        ModEntry.LogDebug($"Copy src[{sourceIdx}]{sourceRect} to comp[{targetIdx}]{targetRect}");
+
+        // r is row, aka y
+        // copy the array row by row from source to target
+        for (int r = 0; r < SpriteSize.Y; r++)
+        {
+            int sourceArrayStart = sourceRect.X + (sourceRect.Y + r) * sourceTxWidth;
+            int targetArrayStart = targetRect.X + (targetRect.Y + r) * targetTxWidth;
+            if (sourceArrayStart + SpriteSize.X > sourceData.Length)
+            {
+                Array.Fill(targetData, Color.Transparent, targetArrayStart, SpriteSize.X);
+            }
+            else
+            {
+                Array.Copy(sourceData, sourceArrayStart, targetData, targetArrayStart, SpriteSize.X);
+            }
+        }
+    }
+}
+
 public sealed class ItemSpriteComp(IGameContentHelper content)
 {
     internal const string CustomFields_SpritePerIndex = $"{ModEntry.ModId}/SpritePerIndex";
     private const int MAX_WIDTH = 4096;
     private ItemMetadata? metadata = null;
-    private IReadOnlyList<ItemSpriteRuleAtlas>? spriteRuleAtlasList = null;
+    private IReadOnlyList<AtlasCtx>? atlasCtxList = null;
 
-    private Point textureSize;
     private Point spriteSize = new(16, 16);
     private int spritePerIndex = 1;
-    private IAssetName? baseTextureAsset = null;
     internal int baseSpriteIndex = 0;
 
-    private const string compTxPrefix = $"{ModEntry.ModId}@TX";
-    private readonly Texture2D compTx = new(Game1.graphics.GraphicsDevice, 16, 16)
-    {
-        Name = $"{compTxPrefix}/PLACEHOLDER",
-    };
-
-    internal bool IsCompTxValid { get; private set; } = false;
     internal bool IsDataValid { get; private set; } = false;
-    internal bool IsValid => IsDataValid && IsCompTxValid;
 
     public void UpdateData(ItemMetadata metadata, IReadOnlyList<ItemSpriteRuleAtlas> spriteRuleAtlasList)
     {
@@ -41,7 +122,6 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             return;
 
         this.metadata = metadata;
-        this.baseTextureAsset = content.ParseAssetName(parsedItemData.TextureName);
 
         this.spritePerIndex = 1;
         switch (this.metadata.TypeIdentifier)
@@ -113,14 +193,20 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
                 break;
         }
 
-        int maxIdx = 0;
-        // recomp: comp tx marked invalid/did not have spriteRuleAtlasList before/got different counts
-        bool needTextureRecomp =
-            !IsCompTxValid
-            || this.spriteRuleAtlasList == null
-            || this.spriteRuleAtlasList.Count != spriteRuleAtlasList.Count;
+        List<AtlasCtx> newAtlasCtxList = [];
+
         foreach (ItemSpriteRuleAtlas spriteAtlas in spriteRuleAtlasList)
         {
+            if (spriteAtlas.SourceSpritePerIndex == null || spriteAtlas.SourceSpritePerIndex == spritePerIndex)
+            {
+                foreach (SpriteIndexRule spriteIndexRule in spriteAtlas.Rules)
+                {
+                    spriteIndexRule.SpriteIndexList = spriteIndexRule.ActualSpriteIndexList;
+                }
+                newAtlasCtxList.Add(new(spriteAtlas, Point.Zero, spriteSize));
+                continue;
+            }
+
             Dictionary<int, int> remappedIdx = [];
             foreach (SpriteIndexRule spriteIndexRule in spriteAtlas.Rules)
             {
@@ -131,54 +217,31 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             }
             List<int> actualIdxKeys = remappedIdx.Keys.ToList();
             actualIdxKeys.Sort();
-            // first pass: put in the padding idx
-            int paddedIdx = spritePerIndex - (spriteAtlas.SourceSpritePerIndex ?? spritePerIndex);
+            int paddedIdx = spritePerIndex - spriteAtlas.SourceSpritePerIndex.Value;
             for (int i = 0; i < actualIdxKeys.Count; i++)
             {
                 remappedIdx[actualIdxKeys[i]] += paddedIdx * i;
             }
-            int baseIdx = maxIdx - remappedIdx.Values.Min();
-            // second pass: put in the baseIdx
+            int minIdx = remappedIdx.Values.Min();
             foreach (SpriteIndexRule spriteIndexRule in spriteAtlas.Rules)
             {
                 spriteIndexRule.ActualSpriteIndexList.Clear();
                 foreach (int idx in spriteIndexRule.SpriteIndexList)
                 {
-                    int finalIdx = baseIdx + remappedIdx[idx];
-                    spriteIndexRule.ActualSpriteIndexList.Add(finalIdx);
-                    maxIdx = Math.Max(maxIdx, finalIdx + spritePerIndex);
+                    spriteIndexRule.ActualSpriteIndexList.Add(remappedIdx[idx] - minIdx);
                 }
             }
+            int maxIdx = remappedIdx.Values.Max() - minIdx + spriteAtlas.SourceSpritePerIndex.Value + 1;
+            newAtlasCtxList.Add(
+                new(
+                    spriteAtlas,
+                    new(Math.Min(maxIdx * spriteSize.X, MAX_WIDTH), ((maxIdx / MAX_WIDTH) + 1) * spriteSize.Y),
+                    spriteSize
+                )
+            );
         }
-        Point newTextureSize = new(
-            Math.Min(maxIdx * spriteSize.X, MAX_WIDTH),
-            ((maxIdx / MAX_WIDTH) + 1) * spriteSize.Y
-        );
 
-        // recomp: different texture size
-        needTextureRecomp = needTextureRecomp || newTextureSize.X != textureSize.X || newTextureSize.Y != textureSize.Y;
-        textureSize = newTextureSize;
-
-        if (!needTextureRecomp)
-        {
-            // recomp: index reordered/changed
-            for (int i = 0; i < this.spriteRuleAtlasList!.Count; i++)
-            {
-                ItemSpriteRuleAtlas oldISRA = this.spriteRuleAtlasList[i];
-                ItemSpriteRuleAtlas newISRA = spriteRuleAtlasList[i];
-                if (oldISRA.ChosenSourceTexture.SourceTextureAsset != newISRA.ChosenSourceTexture.SourceTextureAsset)
-                {
-                    needTextureRecomp = true;
-                    break;
-                }
-            }
-        }
-        this.spriteRuleAtlasList = spriteRuleAtlasList;
-
-        // rebuild the composite texture
-        if (needTextureRecomp)
-            UpdateCompTx();
-
+        this.atlasCtxList = newAtlasCtxList;
         IsDataValid = true;
     }
 
@@ -200,105 +263,10 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
     internal static Rectangle GetSourceRectForIndex(int width, int index, Point spriteSize) =>
         new(index * spriteSize.X % width, index * spriteSize.X / width * spriteSize.Y, spriteSize.X, spriteSize.Y);
 
-    internal void UpdateCompTx()
-    {
-        if (
-            baseTextureAsset == null
-            || metadata == null
-            || spriteRuleAtlasList == null
-            || spriteRuleAtlasList.Count == 0
-        )
-            return;
-
-        if (compTx.Width < textureSize.X || compTx.Height < textureSize.Y)
-        {
-            Texture2D tmpTx = new(
-                Game1.graphics.GraphicsDevice,
-                Math.Max(compTx.Width, textureSize.X),
-                Math.Max(compTx.Height, textureSize.Y)
-            );
-            compTx.CopyFromTexture(tmpTx);
-        }
-        Color[] targetData = new Color[compTx.GetElementCount()];
-        Array.Fill(targetData, Color.Transparent);
-        ModEntry.LogDebug($"Comp: {compTx.Width}x{compTx.Height}");
-
-        List<Texture2D> sourceTextures = [];
-        foreach (ItemSpriteRuleAtlas spriteAtlas in spriteRuleAtlasList)
-        {
-            sourceTextures.Add(content.Load<Texture2D>(spriteAtlas.ChosenSourceTexture.SourceTextureAsset));
-        }
-        Color[] sourceData = new Color[sourceTextures.Max(tx => tx.GetElementCount())];
-        Texture2D sourceTx = sourceTextures[0];
-
-        int txIdx = 0;
-        foreach (ItemSpriteRuleAtlas spriteAtlas in spriteRuleAtlasList)
-        {
-            ModEntry.LogDebug($"Atlas: {spriteAtlas.ChosenSourceTexture.SourceTextureAsset}");
-            sourceTx = sourceTextures[txIdx];
-            txIdx++;
-            sourceTx.GetData(sourceData, 0, sourceTx.GetElementCount());
-            foreach (SpriteIndexRule spriteIndexRule in spriteAtlas.Rules)
-            {
-                for (int i = 0; i < spriteIndexRule.SpriteIndexList.Count; i++)
-                {
-                    int sourceIdx = spriteIndexRule.SpriteIndexList[i];
-                    int targetIdx = spriteIndexRule.ActualSpriteIndexList[i];
-                    for (int j = 0; j < (spriteAtlas.SourceSpritePerIndex ?? spritePerIndex); j++)
-                    {
-                        CopySourceSpriteToTarget(
-                            ref sourceData,
-                            sourceTx.Width,
-                            sourceIdx + j,
-                            ref targetData,
-                            compTx.Width,
-                            targetIdx + j
-                        );
-                    }
-                }
-            }
-        }
-
-        compTx.SetData(targetData);
-        compTx.Name = $"{compTxPrefix}/{metadata.QualifiedItemId}";
-        IsCompTxValid = true;
-    }
-
-    private void CopySourceSpriteToTarget(
-        ref Color[] sourceData,
-        int sourceTxWidth,
-        int sourceIdx,
-        ref Color[] targetData,
-        int targetTxWidth,
-        int targetIdx
-    )
-    {
-        Rectangle sourceRect = GetSourceRectForIndex(sourceTxWidth, sourceIdx);
-        Rectangle targetRect = GetSourceRectForIndex(targetTxWidth, targetIdx);
-
-        ModEntry.LogDebug($"Copy src[{sourceIdx}]{sourceRect} to comp[{targetIdx}]{targetRect}");
-
-        // r is row, aka y
-        // copy the array row by row from source to target
-        for (int r = 0; r < spriteSize.Y; r++)
-        {
-            int sourceArrayStart = sourceRect.X + (sourceRect.Y + r) * sourceTxWidth;
-            int targetArrayStart = targetRect.X + (targetRect.Y + r) * targetTxWidth;
-            if (sourceArrayStart + spriteSize.X > sourceData.Length)
-            {
-                Array.Fill(targetData, Color.Transparent, targetArrayStart, spriteSize.X);
-            }
-            else
-            {
-                Array.Copy(sourceData, sourceArrayStart, targetData, targetArrayStart, spriteSize.X);
-            }
-        }
-    }
-
     private Texture2D? currentTexture = null;
     private Rectangle currentDefaultSourceRect = Rectangle.Empty;
 
-    internal void SetDrawParsedItemData(ParsedItemData parsedItemData, int drawIndex)
+    internal void SetDrawParsedItemData(ParsedItemData parsedItemData, int drawIndex, Texture2D pickedTx)
     {
         if (parsedItemData.IsErrorItem)
             return;
@@ -306,10 +274,10 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
         currentTexture = parsedItemData.GetTexture();
         currentDefaultSourceRect = DynamicMethods.ParsedItemData_get_DefaultSourceRect(parsedItemData);
 
-        DynamicMethods.ParsedItemData_set_Texture(parsedItemData, compTx);
+        DynamicMethods.ParsedItemData_set_Texture(parsedItemData, pickedTx);
         DynamicMethods.ParsedItemData_set_DefaultSourceRect(
             parsedItemData,
-            GetSourceRectForIndex(textureSize.X, drawIndex)
+            GetSourceRectForIndex(pickedTx.Width, drawIndex)
         );
         DynamicMethods.ParsedItemData_set_SpriteIndex(parsedItemData, drawIndex);
     }
@@ -330,7 +298,6 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
     internal void ForceInvalidate()
     {
         IsDataValid = false;
-        IsCompTxValid = false;
     }
 
     internal bool CheckInvalidate(
@@ -349,82 +316,93 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
             metadata = null;
         }
 
-        if (spriteRuleAtlasList != null)
+        if (atlasCtxList != null)
         {
-            foreach (ItemSpriteRuleAtlas spriteAtlas in spriteRuleAtlasList)
+            foreach (AtlasCtx atlasCtx in atlasCtxList)
             {
-                if (spriteAtlas.SourceModAsset != null && reloadedModAssets.Contains(spriteAtlas.SourceModAsset))
+                if (atlasCtx.Atlas.SourceModAsset != null && reloadedModAssets.Contains(atlasCtx.Atlas.SourceModAsset))
                 {
                     IsDataValid = false;
                     break;
                 }
             }
-            foreach (ItemSpriteRuleAtlas spriteAtlas in spriteRuleAtlasList)
+            foreach (AtlasCtx atlasCtx in atlasCtxList)
             {
                 if (
-                    spriteAtlas.ChosenSourceTexture.SourceTextureAsset != null
-                    && names.Contains(spriteAtlas.ChosenSourceTexture.SourceTextureAsset)
+                    atlasCtx.Atlas.ChosenSourceTexture.SourceTextureAsset != null
+                    && names.Contains(atlasCtx.Atlas.ChosenSourceTexture.SourceTextureAsset)
                 )
                 {
-                    IsCompTxValid = false;
+                    atlasCtx.IsCompTxValid = false;
                     break;
                 }
             }
         }
-        if (baseTextureAsset != null && names.Contains(baseTextureAsset))
-        {
-            IsCompTxValid = false;
-        }
-        return !IsValid;
+        return !IsDataValid;
     }
 
-    internal bool CanApplySpriteIndexFromRules => spriteRuleAtlasList?.Count > 0;
+    internal bool CanApplySpriteIndexFromRules => atlasCtxList?.Count > 0;
 
     internal void DoApplySpriteIndexFromRules(Item item, ItemSpriteIndexHolder holder)
     {
-        List<SpriteIndexRule> validRules = [];
-        foreach (ItemSpriteRuleAtlas spriteAtlas in this.spriteRuleAtlasList!)
+        List<(SpriteIndexRule, AtlasCtx)> validRulesCtx = [];
+        foreach (AtlasCtx atlasCtx in this.atlasCtxList!)
         {
-            if (spriteAtlas.SourceModAsset == null || !spriteAtlas.Enabled)
+            if (atlasCtx.Atlas.SourceModAsset == null || !atlasCtx.Atlas.Enabled)
             {
                 continue;
             }
-            foreach (SpriteIndexRule spriteIndexRule in spriteAtlas.Rules)
+            foreach (SpriteIndexRule spriteIndexRule in atlasCtx.Atlas.Rules)
             {
                 if (spriteIndexRule.ValidForItem(item))
                 {
-                    validRules.Add(spriteIndexRule);
+                    validRulesCtx.Add((spriteIndexRule, atlasCtx));
                 }
             }
         }
 
         int spriteIndex = -1;
-        if (validRules.Count > 0)
+        Texture2D? pickedTx = null;
+        if (validRulesCtx.Count > 0)
         {
             int minPrecedence = int.MaxValue;
-            SpriteIndexRule? minPrecedenceRule = null;
-            foreach (SpriteIndexRule rule in validRules)
+            (SpriteIndexRule rule, AtlasCtx atlasCtx)? minPrecedencePair = null;
+            foreach ((SpriteIndexRule rule, AtlasCtx ctx) ruleCtx in validRulesCtx)
             {
-                if (rule.Precedence < minPrecedence)
+                if (ruleCtx.rule.Precedence < minPrecedence)
                 {
-                    minPrecedence = rule.Precedence;
-                    minPrecedenceRule = rule;
+                    minPrecedence = ruleCtx.rule.Precedence;
+                    minPrecedencePair = ruleCtx;
                 }
             }
-            if (minPrecedenceRule != null)
+            if (minPrecedencePair is (SpriteIndexRule rule, AtlasCtx atlasCtx))
             {
                 int randIdx = Random.Shared.Next(
-                    minPrecedenceRule.IncludeDefaultSpriteIndex ? -1 : 0,
-                    minPrecedenceRule.ActualSpriteIndexList.Count
+                    rule.IncludeDefaultSpriteIndex ? -1 : 0,
+                    rule.ActualSpriteIndexList.Count
                 );
                 if (randIdx >= 0)
                 {
-                    spriteIndex = minPrecedenceRule.ActualSpriteIndexList[randIdx];
+                    spriteIndex = rule.ActualSpriteIndexList[randIdx];
+                    pickedTx = atlasCtx.GetTexture(content);
                 }
             }
         }
 
-        holder.Apply(this, spriteIndex);
+        holder.Apply(this, spriteIndex, pickedTx);
+    }
+
+    internal void UpdateCompTx(ItemSpriteRuleAtlas ruleAtlas)
+    {
+        if (atlasCtxList == null)
+            return;
+        foreach (AtlasCtx atlasCtx in atlasCtxList)
+        {
+            if (atlasCtx.Atlas == ruleAtlas)
+            {
+                atlasCtx.IsCompTxValid = false;
+            }
+        }
     }
 
     /// Based on https://github.com/Pathoschild/StardewMods/blob/95d695b205199de4bad86770d69a30806d1721a2/ContentPatcher/Framework/Commands/Commands/ExportCommand.cs
@@ -432,16 +410,30 @@ public sealed class ItemSpriteComp(IGameContentHelper content)
     #region PATCH_EXPORT
     internal void Export(string exportDir)
     {
-        if (metadata != null)
+        if (metadata != null && atlasCtxList != null)
         {
-            string fileName = string.Join('_', metadata.QualifiedItemId.Split(Path.GetInvalidFileNameChars()));
-            using Texture2D exported = UnPremultiplyTransparency(compTx);
-            using Stream stream = File.Create(Path.Combine(exportDir, $"{fileName}.png"));
-            exported.SaveAsPng(stream, exported.Width, exported.Height);
-            string jsonStr = JsonConvert.SerializeObject(spriteRuleAtlasList, Formatting.Indented);
-            File.WriteAllText(Path.Combine(exportDir, $"{fileName}.json"), jsonStr);
-            ModEntry.Log($"- {fileName}.(png|json)", LogLevel.Info);
+            string subDir = Path.Combine(exportDir, SanitizePath(metadata.QualifiedItemId));
+            Directory.CreateDirectory(subDir);
+            File.WriteAllText(
+                Path.Combine(subDir, "data.json"),
+                JsonConvert.SerializeObject(atlasCtxList, Formatting.Indented)
+            );
+            ModEntry.Log($"- {subDir}/data.json", LogLevel.Info);
+            foreach (AtlasCtx atlasCtx in atlasCtxList)
+            {
+                string pngName =
+                    $"{SanitizePath(string.Concat(Path.GetFileName(atlasCtx.Atlas.SourceModAsset.Name), '-', atlasCtx.Atlas.Key))}.png";
+                using Texture2D exported = UnPremultiplyTransparency(atlasCtx.GetTexture(content));
+                using Stream stream = File.Create(Path.Combine(exportDir, subDir, pngName));
+                exported.SaveAsPng(stream, exported.Width, exported.Height);
+                ModEntry.Log($"- {subDir}/{pngName}", LogLevel.Info);
+            }
         }
+    }
+
+    private static string SanitizePath(string path)
+    {
+        return string.Join('_', path.Split(Path.GetInvalidFileNameChars()));
     }
 
     /// <summary>Reverse premultiplication applied to an image asset by the XNA content pipeline.</summary>

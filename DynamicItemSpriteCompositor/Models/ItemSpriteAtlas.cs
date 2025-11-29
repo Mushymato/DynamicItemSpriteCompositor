@@ -17,8 +17,12 @@ public sealed class ItemSpriteRuleAtlas
     public int? SourceSpritePerIndex { get; set; } = null;
     public List<SpriteIndexRule> Rules { get; set; } = [];
 
-    internal string QualifiedItemId => string.Concat(TypeIdentifier, LocalItemId);
+    private string? qId = null;
+    internal string QualifiedItemId => qId ??= string.Concat(TypeIdentifier, LocalItemId);
+
+    internal string Key { get; set; } = null!;
     internal IAssetName SourceModAsset { get; set; } = null!;
+
     internal List<SourceTextureOption> SourceTextureOptions { get; set; } = [];
     internal int ChosenIdx { get; set; } = 0;
     internal SourceTextureOption ChosenSourceTexture => SourceTextureOptions[ChosenIdx];
