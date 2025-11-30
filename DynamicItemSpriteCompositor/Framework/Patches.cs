@@ -214,6 +214,9 @@ internal static class Patches
         float layerDepth
     )
     {
+        if (DrawingPreserveIcon)
+            return;
+
         if (__state == null)
         {
             return;

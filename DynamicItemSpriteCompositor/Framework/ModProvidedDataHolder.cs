@@ -40,6 +40,10 @@ internal sealed record ModProidedDataHolder(IAssetName AssetName, IManifest Mod)
             modRuleAtlas = content.Load<Dictionary<string, ItemSpriteRuleAtlas>>(AssetName);
             HashSet<string> previousQIds = Data.Select(kv => kv.Value.QualifiedItemId).ToHashSet();
 
+            Dictionary<string, Dictionary<string, TextureOption>> cpto = ModEntry.config.Data.ContentPackTextureOptions;
+            cpto.TryGetValue(Mod.UniqueID, out Dictionary<string, TextureOption>? contentPackOptions);
+            bool shouldWriteConfig = false;
+
             List<string> invalidKeys = [];
             foreach ((string key, ItemSpriteRuleAtlas spriteAtlas) in modRuleAtlas)
             {
@@ -108,6 +112,17 @@ internal sealed record ModProidedDataHolder(IAssetName AssetName, IManifest Mod)
                 spriteAtlas.Key = key;
                 spriteAtlas.SourceModAsset = AssetName;
 
+                if (contentPackOptions?.TryGetValue(key, out TextureOption? option) ?? false)
+                {
+                    spriteAtlas.Enabled = option.Enabled;
+                    spriteAtlas.ChosenIdx = spriteAtlas.SourceTextures.IndexOf(option.Texture);
+                    if (spriteAtlas.ChosenIdx < 0)
+                    {
+                        spriteAtlas.ChosenIdx = 0;
+                        shouldWriteConfig = true;
+                    }
+                }
+
                 string thisQId = spriteAtlas.QualifiedItemId;
                 if (
                     Context.IsWorldReady
@@ -120,6 +135,11 @@ internal sealed record ModProidedDataHolder(IAssetName AssetName, IManifest Mod)
             }
             modRuleAtlas.RemoveWhere(kv => invalidKeys.Contains(kv.Key));
             this.Data = modRuleAtlas;
+
+            if (shouldWriteConfig)
+            {
+                ModEntry.config.WriteConfig();
+            }
         }
         return true;
     }

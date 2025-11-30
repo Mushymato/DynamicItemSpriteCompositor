@@ -375,22 +375,17 @@ public sealed class ItemSpriteComp()
         if (validRulesCtx.Count > 0)
         {
             int minPrecedence = int.MaxValue;
-            List<(SpriteIndexRule rule, AtlasCtx atlasCtx)> minPrecedencePairs = [];
+            (SpriteIndexRule rule, AtlasCtx atlasCtx)? minPrecedencePair = null;
             foreach ((SpriteIndexRule rule, AtlasCtx ctx) ruleCtx in validRulesCtx)
             {
-                if (ruleCtx.rule.Precedence <= minPrecedence)
+                if (ruleCtx.rule.Precedence < minPrecedence)
                 {
-                    if (ruleCtx.rule.Precedence < minPrecedence)
-                    {
-                        minPrecedencePairs.Clear();
-                        minPrecedence = ruleCtx.rule.Precedence;
-                    }
-                    minPrecedencePairs.Add(ruleCtx);
+                    minPrecedence = ruleCtx.rule.Precedence;
+                    minPrecedencePair = ruleCtx;
                 }
             }
-            if (minPrecedencePairs.Any())
+            if (minPrecedencePair is (SpriteIndexRule rule, AtlasCtx atlasCtx))
             {
-                (SpriteIndexRule rule, AtlasCtx atlasCtx) = Random.Shared.ChooseFrom(minPrecedencePairs);
                 int randIdx = Random.Shared.Next(
                     rule.IncludeDefaultSpriteIndex ? -1 : 0,
                     rule.SpriteIndexListAdjusted.Count

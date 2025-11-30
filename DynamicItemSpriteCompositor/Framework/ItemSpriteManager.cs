@@ -311,16 +311,22 @@ internal sealed class ItemSpriteManager
 
     private void ReloadAllItemSpriteComp()
     {
-        ModEntry.config.LoadContentPackTextureOptions(
-            modDataAssets.Values,
-            (modRuleAtlas) =>
+        foreach (ModProidedDataHolder holder in modDataAssets.Values)
+        {
+            if (
+                !holder.TryGetModRuleAtlas(
+                    helper.GameContent,
+                    out Dictionary<string, ItemSpriteRuleAtlas>? modRuleAtlas
+                )
+            )
             {
-                foreach (ItemSpriteRuleAtlas holder in modRuleAtlas.Values)
-                {
-                    TryGetItemSpriteCompForQualifiedItemId(holder.QualifiedItemId, out _, makeNewIfNotFound: true);
-                }
+                continue;
             }
-        );
+            foreach (ItemSpriteRuleAtlas ruleAtlas in modRuleAtlas.Values)
+            {
+                TryGetItemSpriteCompForQualifiedItemId(ruleAtlas.QualifiedItemId, out _, makeNewIfNotFound: true);
+            }
+        }
     }
 
     private void RecheckAllDynamicSpriteIndex()

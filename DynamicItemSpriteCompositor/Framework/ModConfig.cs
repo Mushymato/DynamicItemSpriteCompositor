@@ -48,44 +48,9 @@ public sealed class ModConfigHelper(IModHelper helper, IManifest mod)
         );
     }
 
-    internal void LoadContentPackTextureOptions(
-        IEnumerable<ModProidedDataHolder> modDataHolders,
-        Action<Dictionary<string, ItemSpriteRuleAtlas>>? DoWorkOnModRule
-    )
+    internal void WriteConfig()
     {
-        bool shouldWrite = false;
-        Dictionary<string, Dictionary<string, TextureOption>> cpto = Data.ContentPackTextureOptions;
-        foreach (ModProidedDataHolder holder in modDataHolders)
-        {
-            if (
-                !holder.TryGetModRuleAtlas(
-                    helper.GameContent,
-                    out Dictionary<string, ItemSpriteRuleAtlas>? modRuleAtlas
-                )
-            )
-            {
-                continue;
-            }
-            if (cpto.TryGetValue(holder.Mod.UniqueID, out Dictionary<string, TextureOption>? innerDict))
-            {
-                foreach ((string key, ItemSpriteRuleAtlas ruleAtlas) in modRuleAtlas)
-                {
-                    if (innerDict.TryGetValue(key, out TextureOption? option))
-                    {
-                        ruleAtlas.Enabled = option.Enabled;
-                        ruleAtlas.ChosenIdx = ruleAtlas.SourceTextures.IndexOf(option.Texture);
-                        if (ruleAtlas.ChosenIdx < 0)
-                        {
-                            ruleAtlas.ChosenIdx = 0;
-                            shouldWrite = true;
-                        }
-                    }
-                }
-            }
-            DoWorkOnModRule?.Invoke(modRuleAtlas);
-        }
-        if (shouldWrite)
-            helper.WriteConfig(Data);
+        helper.WriteConfig(Data);
     }
 
     internal void SaveContentPackTextureOptions(IEnumerable<ModProidedDataHolder> modDataHolders)

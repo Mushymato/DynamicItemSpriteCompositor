@@ -795,7 +795,13 @@ internal sealed class ModSpritePicker : IClickableMenu
     {
         if (CurrentMod == null)
         {
-            config.LoadContentPackTextureOptions(this.modDataHolders, null);
+            foreach (ModProidedDataHolder holder in modDataHolders)
+            {
+                if (!holder.TryGetModRuleAtlas(helper.GameContent, out _))
+                {
+                    continue;
+                }
+            }
             NextMod();
         }
 
