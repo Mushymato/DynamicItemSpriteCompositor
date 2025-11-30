@@ -34,8 +34,8 @@
           "ConfigIconSpriteIndex": 1,
           "SourceTextures": "Jelly/No Label/Checkererd Pattern Lid/Off White Lid/{{ModId}},Jelly/Label/Checkerd Pattern Lid/Brown Lid/{{ModId}},Jelly/Label/Checkerd Pattern Lid/Cool White Lid/{{ModId}},Jelly/Label/Checkerd Pattern Lid/Navy Lid/{{ModId}},Jelly/Label/Checkerd Pattern Lid/Off White Lid/{{ModId}},Jelly/Label/Checkerd Pattern Lid/Orange Lid/{{ModId}},Jelly/Label/Checkerd Pattern Lid/Warm White Lid/{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Brown Lid/{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Cool White Lid/{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Navy Lid/{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Off White Lid/{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Orange Lid/{{ModId}},Jelly/Label/No Checkererd Pattern Lid/Warm White Lid/{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Brown Lid/{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Cool White Lid/{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Navy Lid/{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Orange Lid/{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Warm White Lid/{{ModId}},Jelly/No Label/Checkererd Pattern Lid/Warm White Lid/{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Brown Lid/{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Cool White Lid/{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Navy Lid/{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Off White Lid/{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Orange Lid/{{ModId}},Jelly/No Label/No Checkererd Pattern Lid/Warm White Lid/{{ModId}}",
           "SourceSpritePerIndex": 1,
-          // "PreserveIconOffset": "0,0",
-          // "PreserveIconScale": 0.5,
+          "PreserveIconOffset": "32,32",
+          "PreserveIconScale": 0.5,
           "Rules": [
             {
               "RequiredColor": "color_cyan",

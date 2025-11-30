@@ -10,7 +10,8 @@ internal static class SampleObjectCache
     {
         if (itemId == null)
             return null;
-        if (cache.TryGetValue(ItemRegistry.QualifyItemId(itemId) ?? itemId, out SObject? sobj))
+        string qId = ItemRegistry.QualifyItemId(itemId) ?? itemId;
+        if (cache.TryGetValue(qId, out SObject? sobj))
         {
             return sobj;
         }
@@ -22,7 +23,7 @@ internal static class SampleObjectCache
         {
             sobj = null;
         }
-        cache[itemId] = sobj;
+        cache[qId] = sobj;
         return sobj;
     }
 

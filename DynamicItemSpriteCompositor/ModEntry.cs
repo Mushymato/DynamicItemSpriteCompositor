@@ -35,7 +35,7 @@ public sealed class ModEntry : Mod
         config = new(helper, ModManifest);
         picker = new(helper, config, manager.modDataAssets, manager.UpdateCompTxForAtlas);
         DynamicMethods.Make();
-        Patches.Register();
+        Patches.Register(helper);
 
 #if DEBUG
         helper.ConsoleCommands.Add("jelly", "jelly", ConsoleJelly);

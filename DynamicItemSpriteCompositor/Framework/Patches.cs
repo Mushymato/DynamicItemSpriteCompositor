@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewValley;
+using StardewValley.ItemTypeDefinitions;
 using StardewValley.Objects;
 
 namespace DynamicItemSpriteCompositor.Framework;
@@ -11,8 +12,11 @@ internal static class Patches
 {
     private const float LAYER_DEPTH_OFFSET = 1 / 10000f;
 
-    internal static void Register()
+    private static IGameContentHelper content = null!;
+
+    internal static void Register(IModHelper helper)
     {
+        content = helper.GameContent;
         Harmony harmony = new(ModEntry.ModId);
         try
         {
@@ -29,10 +33,6 @@ internal static class Patches
             {
                 priority = Priority.Last,
             };
-            HarmonyMethod drawPostfix_NonTile = new(typeof(Patches), nameof(SObject_draw_Postfix_NonTile))
-            {
-                priority = Priority.Last,
-            };
             HarmonyMethod drawPostfix_Menu = new(typeof(Patches), nameof(SObject_draw_Postfix_Menu))
             {
                 priority = Priority.Last,
@@ -41,6 +41,21 @@ internal static class Patches
             {
                 priority = Priority.Last,
             };
+            HarmonyMethod drawPostfix_Furniture;
+            if (helper.ModRegistry.IsLoaded("sophie.Calcifer"))
+            {
+                drawPostfix_Furniture = new(typeof(Patches), nameof(SObject_draw_Postfix_Furniture_Calcifer))
+                {
+                    priority = Priority.Last,
+                };
+            }
+            else
+            {
+                drawPostfix_Furniture = new(typeof(Patches), nameof(SObject_draw_Postfix_Furniture))
+                {
+                    priority = Priority.Last,
+                };
+            }
             // SObject
             harmony.Patch(
                 original: AccessTools.DeclaredMethod(
@@ -58,7 +73,7 @@ internal static class Patches
                     [typeof(SpriteBatch), typeof(int), typeof(int), typeof(float), typeof(float)]
                 ),
                 prefix: drawPrefix,
-                postfix: drawPostfix_NonTile
+                postfix: drawPostfix_Base
             );
             harmony.Patch(
                 original: AccessTools.DeclaredMethod(typeof(SObject), nameof(SObject.drawInMenu)),
@@ -99,7 +114,7 @@ internal static class Patches
             harmony.Patch(
                 original: AccessTools.DeclaredMethod(typeof(Furniture), nameof(Furniture.draw)),
                 prefix: drawPrefix,
-                postfix: drawPostfix_Pos
+                postfix: drawPostfix_Furniture
             );
         }
         catch (Exception ex)
@@ -114,17 +129,15 @@ internal static class Patches
         ModEntry.manager.ReapplyWatchedSpriteIndex(__instance);
     }
 
-    private static bool DrawingPreserveIcon = false;
-
     private static void SObject_draw_Prefix(
         SObject __instance,
         ref (ItemSpriteIndexHolder?, ItemSpriteIndexHolder?)? __state
     )
     {
-        if (DrawingPreserveIcon)
-            return;
-
         __state = null;
+
+        if (__instance.isTemporarilyInvisible)
+            return;
 
         ItemSpriteIndexHolder? holder = null;
         if (__instance is not Furniture)
@@ -180,26 +193,25 @@ internal static class Patches
         float layerDepth
     )
     {
-        if (holder == null || obj.preservedParentSheetIndex.Value == null)
+        if (holder == null || obj.preservedParentSheetIndex.Value is not string preserveId)
             return;
-        holder.UnsetDrawParsedItemData(obj);
         if (
             holder.TryGetPreserveIconDraw(out float scale, out Vector2 offset)
-            && SampleObjectCache.GetObject(obj.preservedParentSheetIndex.Value) is SObject preserve
+            && ItemRegistry.GetData(preserveId) is ParsedItemData data
         )
         {
-            DrawingPreserveIcon = true;
-            preserve.drawInMenu(
-                spriteBatch,
-                new(x - offset.X, y - offset.Y),
+            // intentionally avoided applying sprite variations on preserve since the item doesn't truly exist
+            spriteBatch.Draw(
+                data.GetTexture(),
+                new Vector2(x + offset.X, y + offset.Y),
+                data.GetSourceRect(),
+                Color.White * alpha,
+                0f,
+                Vector2.Zero,
                 baseScale * scale,
-                alpha,
-                layerDepth,
-                StackDrawType.Hide,
-                Color.White,
-                drawShadow: false
+                SpriteEffects.None,
+                layerDepth
             );
-            DrawingPreserveIcon = false;
         }
     }
 
@@ -214,9 +226,6 @@ internal static class Patches
         float layerDepth
     )
     {
-        if (DrawingPreserveIcon)
-            return;
-
         if (__state == null)
         {
             return;
@@ -244,37 +253,16 @@ internal static class Patches
         float alpha
     )
     {
+        Vector2 local = Game1.GlobalToLocal(new(x * 64, y * 64));
         SObject_draw_Postfix_Shared(
             __instance,
             ref __state,
             spriteBatch,
-            x * 64,
-            y * 64,
+            local.X,
+            local.Y,
             alpha,
             4f,
             ((y + 1) * 64 + 1) / 10000f + x / 50000f
-        );
-    }
-
-    private static void SObject_draw_Postfix_NonTile(
-        SObject __instance,
-        ref (ItemSpriteIndexHolder?, ItemSpriteIndexHolder?)? __state,
-        SpriteBatch spriteBatch,
-        int xNonTile,
-        int yNonTile,
-        float layerDepth,
-        float alpha
-    )
-    {
-        SObject_draw_Postfix_Shared(
-            __instance,
-            ref __state,
-            spriteBatch,
-            xNonTile,
-            yNonTile,
-            alpha,
-            4f,
-            layerDepth + LAYER_DEPTH_OFFSET
         );
     }
 
@@ -293,7 +281,7 @@ internal static class Patches
             objectPosition.X,
             objectPosition.Y,
             1f,
-            1f,
+            4f,
             Math.Max(0f, (f.StandingPixel.Y + 4) / 10000f)
         );
     }
@@ -315,8 +303,89 @@ internal static class Patches
             location.X,
             location.Y,
             transparency,
-            scaleSize,
+            scaleSize * 4f,
             layerDepth + LAYER_DEPTH_OFFSET
         );
+    }
+
+    private static void SObject_draw_Postfix_Furniture(
+        Furniture __instance,
+        ref (ItemSpriteIndexHolder?, ItemSpriteIndexHolder?)? __state,
+        SpriteBatch spriteBatch,
+        float alpha
+    )
+    {
+        if (__state?.Item2 is ItemSpriteIndexHolder heldHolder && __instance.heldObject.Value is SObject heldObj)
+        {
+            heldHolder.UnsetDrawParsedItemData(heldObj);
+            if (!heldObj.bigCraftable.Value)
+            {
+                Vector2 local = Game1.GlobalToLocal(
+                    new(
+                        __instance.boundingBox.Center.X - 32,
+                        __instance.boundingBox.Center.Y - (__instance.drawHeldObjectLow.Value ? 32 : 85)
+                    )
+                );
+                TryDrawPreserveIcon(
+                    heldHolder,
+                    heldObj,
+                    spriteBatch,
+                    local.X,
+                    local.Y,
+                    alpha,
+                    4f,
+                    (__instance.boundingBox.Bottom + 2) / 10000f
+                );
+            }
+        }
+    }
+
+    private const string CalciferCompat_FurnitureOffsets = "sophie.Calcifer/FurnitureOffsets";
+
+    private static void SObject_draw_Postfix_Furniture_Calcifer(
+        Furniture __instance,
+        ref (ItemSpriteIndexHolder?, ItemSpriteIndexHolder?)? __state,
+        SpriteBatch spriteBatch,
+        float alpha
+    )
+    {
+        if (__state?.Item2 is ItemSpriteIndexHolder heldHolder && __instance.heldObject.Value is SObject heldObj)
+        {
+            heldHolder.UnsetDrawParsedItemData(heldObj);
+            if (!heldObj.bigCraftable.Value)
+            {
+                Vector2 local = Game1.GlobalToLocal(
+                    new(
+                        __instance.boundingBox.Center.X - 32,
+                        __instance.boundingBox.Center.Y - (__instance.drawHeldObjectLow.Value ? 32 : 85)
+                    )
+                );
+                if (
+                    content.DoesAssetExist<Dictionary<string, Vector2>>(
+                        content.ParseAssetName(CalciferCompat_FurnitureOffsets)
+                    )
+                )
+                {
+                    Dictionary<string, Vector2> calciferFurnitureOffsets = content.Load<Dictionary<string, Vector2>>(
+                        CalciferCompat_FurnitureOffsets
+                    );
+                    if (calciferFurnitureOffsets.TryGetValue(__instance.QualifiedItemId, out Vector2 calciferOffset))
+                    {
+                        local.X += calciferOffset.X;
+                        local.Y += calciferOffset.Y;
+                    }
+                }
+                TryDrawPreserveIcon(
+                    heldHolder,
+                    heldObj,
+                    spriteBatch,
+                    local.X,
+                    local.Y,
+                    alpha,
+                    4f,
+                    (__instance.boundingBox.Bottom + 2) / 10000f
+                );
+            }
+        }
     }
 }

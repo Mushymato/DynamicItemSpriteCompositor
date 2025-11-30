@@ -11,7 +11,7 @@ internal sealed record ItemSpriteIndexHolder()
     private int realIndex = -1;
 
     private int pickedIndex = -1;
-    private AtlasCtx? pickedAtlas = null;
+    private readonly WeakReference<AtlasCtx?> pickedAtlasRef = new(null);
 
     internal static ItemSpriteIndexHolder Make(Item item) => new();
 
@@ -19,12 +19,18 @@ internal sealed record ItemSpriteIndexHolder()
     {
         Comp = comp;
         this.pickedIndex = pickedIndex;
-        this.pickedAtlas = pickedAtlas;
+        this.pickedAtlasRef.SetTarget(pickedAtlas);
     }
 
     internal void SetDrawParsedItemData(Item item)
     {
-        if (realIndex != -1 || pickedIndex == -1 || Comp == null || pickedAtlas == null)
+        if (
+            realIndex != -1
+            || pickedIndex == -1
+            || Comp == null
+            || !pickedAtlasRef.TryGetTarget(out AtlasCtx? pickedAtlas)
+            || pickedAtlas == null
+        )
             return;
         realIndex = item.ParentSheetIndex;
         int drawIndex = pickedIndex + realIndex - Comp.baseSpriteIndex;
@@ -35,7 +41,13 @@ internal sealed record ItemSpriteIndexHolder()
 
     internal bool UnsetDrawParsedItemData(Item item)
     {
-        if (realIndex == -1 || pickedIndex == -1 || Comp == null || pickedAtlas == null)
+        if (
+            realIndex == -1
+            || pickedIndex == -1
+            || Comp == null
+            || !pickedAtlasRef.TryGetTarget(out AtlasCtx? pickedAtlas)
+            || pickedAtlas == null
+        )
             return false;
         Comp.UnsetDrawParsedItemData(ItemRegistry.GetData(item.QualifiedItemId));
         item.ParentSheetIndex = realIndex;
@@ -62,7 +74,7 @@ internal sealed record ItemSpriteIndexHolder()
     {
         offset = Vector2.Zero;
         scale = 0f;
-        if (pickedAtlas == null)
+        if (!pickedAtlasRef.TryGetTarget(out AtlasCtx? pickedAtlas) || pickedAtlas == null)
         {
             return false;
         }
