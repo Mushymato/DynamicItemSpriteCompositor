@@ -1,3 +1,4 @@
+using Microsoft.Xna.Framework;
 using Newtonsoft.Json;
 using StardewModdingAPI;
 
@@ -16,6 +17,8 @@ public sealed class ItemSpriteRuleAtlas
     public List<string> SourceTextures { get; set; } = [];
     public int? SourceSpritePerIndex { get; set; } = null;
     public List<SpriteIndexRule> Rules { get; set; } = [];
+    public float PreserveIconScale { get; set; } = 0f;
+    public Vector2 PreserveIconOffset { get; set; } = Vector2.Zero;
 
     private string? qId = null;
     internal string QualifiedItemId => qId ??= string.Concat(TypeIdentifier, LocalItemId);

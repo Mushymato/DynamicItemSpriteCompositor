@@ -37,6 +37,13 @@ public class SpriteIndexReqs
 
 public sealed class SpriteIndexRule : SpriteIndexReqs
 {
+    private string IdImpl = "";
+    public string Id
+    {
+        get => IdImpl ??= string.Join('|', SpriteIndexList.OrderBy(idx => idx).Select(idx => idx.ToString()));
+        set => IdImpl = value;
+    }
+
     [JsonConverter(typeof(StringIntListConverter))]
     public List<int> SpriteIndexList { get; set; } = [];
     public bool IncludeDefaultSpriteIndex { get; set; } = false;

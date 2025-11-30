@@ -201,7 +201,7 @@ internal sealed class ModSpritePicker : IClickableMenu
     internal const int TEXTURE_ROW_CNT = 6;
     internal const int TEXTURE_COL_CNT = 9;
 
-    private readonly Rectangle MenuRectBG = new(0, 256, 60, 60);
+    internal static readonly Rectangle MenuRectBG = new(0, 256, 60, 60);
 
     private readonly IModHelper helper;
     private readonly ModConfigHelper config;

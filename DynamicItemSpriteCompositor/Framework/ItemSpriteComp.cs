@@ -206,7 +206,7 @@ public sealed class ItemSpriteComp()
 
         foreach (ItemSpriteRuleAtlas spriteAtlas in spriteRuleAtlasList)
         {
-            if (spriteAtlas.SourceSpritePerIndex == null || spriteAtlas.SourceSpritePerIndex == spritePerIndex)
+            if (spriteAtlas.SourceSpritePerIndex == null || spriteAtlas.SourceSpritePerIndex >= spritePerIndex)
             {
                 foreach (SpriteIndexRule spriteIndexRule in spriteAtlas.Rules)
                 {
@@ -371,7 +371,7 @@ public sealed class ItemSpriteComp()
         }
 
         int spriteIndex = -1;
-        Func<Texture2D>? pickedTxGetter = null;
+        AtlasCtx? pickedAtlas = null;
         if (validRulesCtx.Count > 0)
         {
             int minPrecedence = int.MaxValue;
@@ -398,12 +398,12 @@ public sealed class ItemSpriteComp()
                 if (randIdx >= 0)
                 {
                     spriteIndex = rule.SpriteIndexListAdjusted[randIdx];
-                    pickedTxGetter = atlasCtx.GetTexture;
+                    pickedAtlas = atlasCtx;
                 }
             }
         }
 
-        holder.Apply(this, spriteIndex, pickedTxGetter);
+        holder.Apply(this, spriteIndex, pickedAtlas);
     }
 
     internal void UpdateCompTx(ItemSpriteRuleAtlas ruleAtlas)

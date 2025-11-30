@@ -8,6 +8,8 @@ internal static class SampleObjectCache
 
     internal static SObject? GetObject(string itemId)
     {
+        if (itemId == null)
+            return null;
         if (cache.TryGetValue(ItemRegistry.QualifyItemId(itemId) ?? itemId, out SObject? sobj))
         {
             return sobj;

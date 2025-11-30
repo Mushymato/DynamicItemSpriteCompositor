@@ -1,3 +1,4 @@
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
 
@@ -10,31 +11,43 @@ internal sealed record ItemSpriteIndexHolder()
     private int realIndex = -1;
 
     private int pickedIndex = -1;
-    private Func<Texture2D>? pickedTxGetter = null;
+    private readonly WeakReference<AtlasCtx?> pickedAtlasRef = new(null);
 
     internal static ItemSpriteIndexHolder Make(Item item) => new();
 
-    internal void Apply(ItemSpriteComp comp, int pickedIndex, Func<Texture2D>? pickedTxGetter)
+    internal void Apply(ItemSpriteComp comp, int pickedIndex, AtlasCtx? pickedAtlas)
     {
         Comp = comp;
         this.pickedIndex = pickedIndex;
-        this.pickedTxGetter = pickedTxGetter;
+        this.pickedAtlasRef.SetTarget(pickedAtlas);
     }
 
     internal void SetDrawParsedItemData(Item item)
     {
-        if (realIndex != -1 || pickedIndex == -1 || Comp == null || pickedTxGetter == null)
+        if (
+            realIndex != -1
+            || pickedIndex == -1
+            || Comp == null
+            || !pickedAtlasRef.TryGetTarget(out AtlasCtx? pickedAtlas)
+            || pickedAtlas == null
+        )
             return;
         realIndex = item.ParentSheetIndex;
         int drawIndex = pickedIndex + realIndex - Comp.baseSpriteIndex;
-        Comp.SetDrawParsedItemData(ItemRegistry.GetData(item.QualifiedItemId), drawIndex, pickedTxGetter());
+        Comp.SetDrawParsedItemData(ItemRegistry.GetData(item.QualifiedItemId), drawIndex, pickedAtlas.GetTexture());
         item.ParentSheetIndex = drawIndex;
         return;
     }
 
     internal bool UnsetDrawParsedItemData(Item item)
     {
-        if (realIndex == -1 || pickedIndex == -1 || Comp == null || pickedTxGetter == null)
+        if (
+            realIndex == -1
+            || pickedIndex == -1
+            || Comp == null
+            || !pickedAtlasRef.TryGetTarget(out AtlasCtx? pickedAtlas)
+            || pickedAtlas == null
+        )
             return false;
         Comp.UnsetDrawParsedItemData(ItemRegistry.GetData(item.QualifiedItemId));
         item.ParentSheetIndex = realIndex;
@@ -55,5 +68,18 @@ internal sealed record ItemSpriteIndexHolder()
             return true;
         }
         return false;
+    }
+
+    internal bool TryGetPreserveIconDraw(out float scale, out Vector2 offset)
+    {
+        offset = Vector2.Zero;
+        scale = 0f;
+        if (!pickedAtlasRef.TryGetTarget(out AtlasCtx? pickedAtlas) || pickedAtlas == null)
+        {
+            return false;
+        }
+        offset = pickedAtlas.Atlas.PreserveIconOffset;
+        scale = pickedAtlas.Atlas.PreserveIconScale;
+        return scale > 0f;
     }
 }
