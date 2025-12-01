@@ -68,21 +68,25 @@ To debug any unexpected behavior, use console command `disco-export` to save the
 ### Default Precedences
 
 The default precedence is decided like this:
-- If `RequiredContextTags` is set: -100
-- Else if `RequiredColor` is set: -50
-- Else if `RequiredCondition` is set: -20
+- If `RequiredContextTags` is set: 1000
+- Else if `RequiredColor` is set: 2000
+- Else if `RequiredCondition` is set: 3000
+- Else (no conditions at all): 9000
 
 When using `Preserve`, a precedence bonus is added:
-    - If `RequiredContextTags` is set: -20
-    - Else if `RequiredColor` is set: -10
-    - Else if `RequiredCondition` is set: -4
+    - If `RequiredContextTags` is set: 100
+    - Else if `RequiredColor` is set: 200
+    - Else if `RequiredCondition` is set: 300
+    - Else no condition: 900
 
 When using `HeldObject`, a precedence bonus is added:
-    - If `RequiredContextTags` is set: -10
-    - Else if `RequiredColor` is set: -5
-    - Else if `RequiredCondition` is set: -2
+    - If `RequiredContextTags` is set: 10
+    - Else if `RequiredColor` is set: 20
+    - Else if `RequiredCondition` is set: 30
+    - Else no condition: 90
 
 If a precedence is set by content pack, then none of these apply and the content pack given value is used as is.
+Given the formula, the default precedence will always be positive. Thus content packs should use negative value if manually setting the precedence.
 
 ## Sprite Per Index
 
