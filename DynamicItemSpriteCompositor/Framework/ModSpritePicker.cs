@@ -1,4 +1,5 @@
 using DynamicItemSpriteCompositor.Models;
+using Force.DeepCloner;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -12,25 +13,33 @@ using StardewValley.TokenizableStrings;
 
 namespace DynamicItemSpriteCompositor.Framework;
 
-internal record DisplayInfo(Texture2D Icon, Rectangle IconSourceRect, string Label)
+internal record DisplayInfo(Texture2D Icon, Rectangle IconSourceRect)
 {
-    internal float Scale = 64f / IconSourceRect.Height;
-    internal int XOffset = (int)((64 - IconSourceRect.Width * (64f / IconSourceRect.Height)) / 2);
+    internal float Scale { get; set; } = 64f / IconSourceRect.Height;
+    internal float XOffset { get; set; } = (float)((64 - IconSourceRect.Width * (64f / IconSourceRect.Height)) / 2);
+    internal float YOffset { get; set; } = 0f;
+    internal float Rotation { get; set; } = 0f;
     internal bool Chosen { get; set; } = false;
+    internal DisplayInfo? PreserveIcon { get; set; } = null;
 
     internal void DrawIcon(SpriteBatch b, Rectangle bounds, int PaddingX, int PaddingY)
     {
         b.Draw(
             Icon,
-            new(bounds.X + PaddingX + ModSpritePicker.PADDING + XOffset, bounds.Y + PaddingY + ModSpritePicker.PADDING),
+            new(
+                bounds.X + PaddingX + ModSpritePicker.PADDING + XOffset,
+                bounds.Y + PaddingY + ModSpritePicker.PADDING + YOffset
+            ),
             IconSourceRect,
             Color.White,
-            0,
+            Rotation,
             Vector2.Zero,
             Scale,
             SpriteEffects.None,
             1f
         );
+        if (ModEntry.config.Data.DisplayPreserveItemIcon)
+            PreserveIcon?.DrawIcon(b, bounds, PaddingX, PaddingY);
     }
 }
 
@@ -43,7 +52,7 @@ internal sealed record AtlasPickDisplayInfo(
     IGameContentHelper Content,
     Texture2D IconError,
     Rectangle IconErrorSourceRect
-) : DisplayInfo(Icon, IconSourceRect, Label)
+) : DisplayInfo(Icon, IconSourceRect)
 {
     internal Texture2D? IconCurrent { get; private set; } = null!;
     internal Rectangle IconCurrentSourceRect { get; private set; } = Rectangle.Empty;
@@ -111,7 +120,6 @@ internal sealed class AtlasPickCC(Rectangle bounds, string name) : RelativeCC(bo
             Color.White,
             drawShadow: false
         );
-        aDisplay.DrawIcon(b, bounds, PaddingX, PaddingY);
         if (aDisplay.IconCurrent != null)
         {
             b.Draw(
@@ -129,6 +137,7 @@ internal sealed class AtlasPickCC(Rectangle bounds, string name) : RelativeCC(bo
                 1f
             );
         }
+        aDisplay.DrawIcon(b, bounds, PaddingX, PaddingY);
         Utility.drawTextWithShadow(
             b,
             aDisplay.Label,
@@ -294,7 +303,7 @@ internal sealed class ModSpritePicker : IClickableMenu
             Game1.viewport.X + 96,
             Game1.viewport.Y + 96,
             (64 + PADDING * 3) * TEXTURE_COL_CNT + MARGIN * 2 + PADDING,
-            (64 + PADDING * 3) * TEXTURE_ROW_CNT + MARGIN * 2,
+            (64 + PADDING * 3) * TEXTURE_ROW_CNT + MARGIN * 3,
             showUpperRightCloseButton: false
         )
     {
@@ -484,14 +493,15 @@ internal sealed class ModSpritePicker : IClickableMenu
         }
         else
         {
+            AtlasPickDisplayInfo aDisplay = (AtlasPickDisplayInfo)AtlasPicksDisplay[AtlasCurrIdx];
             SpriteText.drawStringWithScrollCenteredAt(
                 b,
-                $"{CurrentMod.Mod.Name} - {AtlasPicksDisplay[AtlasCurrIdx].Label}",
+                $"{CurrentMod.Mod.Name} - {aDisplay.Label}",
                 xPositionOnScreen + width / 2,
                 yPositionOnScreen - 64
             );
 
-            ItemSpriteRuleAtlas atlas = ((AtlasPickDisplayInfo)AtlasPicksDisplay[AtlasCurrIdx]).Atlas;
+            ItemSpriteRuleAtlas atlas = aDisplay.Atlas;
             DrawWithDisplayInfo(
                 b,
                 TexturePicks,
@@ -757,26 +767,44 @@ internal sealed class ModSpritePicker : IClickableMenu
                 ruleAtlas.ConfigIconSpriteIndex ?? ruleAtlas.Rules.SelectMany(rule => rule.SpriteIndexList).Min();
             List<DisplayInfo> textureDisplayList =
             [
-                new(
-                    parsedItemData.ItemType.GetErrorTexture(),
-                    parsedItemData.ItemType.GetErrorSourceRect(),
-                    $"{ModEntry.ModId}_DISABLE"
-                ),
+                new(parsedItemData.ItemType.GetErrorTexture(), parsedItemData.ItemType.GetErrorSourceRect()),
             ];
+            DisplayInfo? preserveDisplay = null;
+            if (
+                ruleAtlas.PreserveIconScale > 0
+                && ruleAtlas.TypeIdentifier == "(O)"
+                && ruleAtlas.ConfigIconPreserveItemId != null
+                && ItemRegistry.GetData(ruleAtlas.ConfigIconPreserveItemId) is ParsedItemData preserveData
+            )
+            {
+                preserveDisplay = new(preserveData.GetTexture(), preserveData.GetSourceRect())
+                {
+                    XOffset = ruleAtlas.PreserveIconOffset.X,
+                    YOffset = ruleAtlas.PreserveIconOffset.Y,
+                    Scale = 4 * ruleAtlas.PreserveIconScale,
+                };
+            }
             foreach (SourceTextureOption option in ruleAtlas.SourceTextureOptions)
             {
                 Texture2D sourceTx = helper.GameContent.Load<Texture2D>(option.SourceTextureAsset);
-                textureDisplayList.Add(
-                    new(
-                        sourceTx,
-                        ItemSpriteComp.GetSourceRectForIndex(
-                            sourceTx.ActualWidth,
-                            displayIdx,
-                            new(baseSourceRect.Width, baseSourceRect.Height)
-                        ),
-                        option.Texture
+                DisplayInfo iconDisplay = new(
+                    sourceTx,
+                    ItemSpriteComp.GetSourceRectForIndex(
+                        sourceTx.ActualWidth,
+                        displayIdx,
+                        new(baseSourceRect.Width, baseSourceRect.Height)
                     )
-                );
+                )
+                {
+                    PreserveIcon = preserveDisplay,
+                };
+                textureDisplayList.Add(iconDisplay);
+            }
+            DisplayInfo? preserveDisplayAtlas = null;
+            if (preserveDisplay != null)
+            {
+                preserveDisplayAtlas = preserveDisplay.ShallowClone();
+                preserveDisplayAtlas.XOffset += PADDING + 64;
             }
             Texture2D currTx = helper.GameContent.Load<Texture2D>(ruleAtlas.ChosenSourceTexture.SourceTextureAsset);
             AtlasPickDisplayInfo atlasPickDisplay = new(
@@ -788,7 +816,10 @@ internal sealed class ModSpritePicker : IClickableMenu
                 helper.GameContent,
                 parsedItemData.ItemType.GetErrorTexture(),
                 parsedItemData.ItemType.GetErrorSourceRect()
-            );
+            )
+            {
+                PreserveIcon = preserveDisplayAtlas,
+            };
             atlasPickDisplay.UpdateIconCurrent();
             AtlasPicksDisplay.Add(atlasPickDisplay);
 

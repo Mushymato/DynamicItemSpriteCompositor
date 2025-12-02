@@ -12,12 +12,13 @@ public sealed class ItemSpriteRuleAtlas
     public string LocalItemId { get; set; } = "0";
     public string? ConfigName { get; set; } = null;
     public int? ConfigIconSpriteIndex { get; set; } = null;
+    public string? ConfigIconPreserveItemId { get; set; } = null;
 
     [JsonConverter(typeof(SourceTexturesConverter))]
     public List<string> SourceTextures { get; set; } = [];
     public int? SourceSpritePerIndex { get; set; } = null;
     public List<SpriteIndexRule> Rules { get; set; } = [];
-    public float PreserveIconScale { get; set; } = 0.5f;
+    public float PreserveIconScale { get; set; } = 0;
     public Vector2 PreserveIconOffset { get; set; } = Vector2.Zero;
 
     private string? qId = null;

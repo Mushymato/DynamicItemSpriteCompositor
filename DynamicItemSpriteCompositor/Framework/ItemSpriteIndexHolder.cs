@@ -72,14 +72,14 @@ internal sealed record ItemSpriteIndexHolder()
 
     internal bool TryGetPreserveIconDraw(out float scale, out Vector2 offset)
     {
-        offset = Vector2.Zero;
         scale = 0f;
+        offset = Vector2.Zero;
         if (!pickedAtlasRef.TryGetTarget(out AtlasCtx? pickedAtlas) || pickedAtlas == null)
         {
             return false;
         }
-        offset = pickedAtlas.Atlas.PreserveIconOffset;
         scale = pickedAtlas.Atlas.PreserveIconScale;
+        offset = pickedAtlas.Atlas.PreserveIconOffset;
         return scale > 0f;
     }
 }

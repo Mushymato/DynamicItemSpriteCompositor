@@ -26,10 +26,11 @@ Since the asset name is already your mod id, there's no real need to make the ke
 | `LocalItemId` | string | `"0"` | This is the item id part of a qualified item id (e.g. `(O)0`). |
 | `ConfigName` | string | _null_ | A user friendly name for this entry to display on the config menu. Defaults to the base item name when not given. |
 | `ConfigIconSpriteIndex` | string | _null_ | The primary sprite to display in the configuration menu, When not given, the lowest index defined across the rules for this atlas will be used. |
+| `ConfigIconPreserveItemId` | string | _null_ | When `PreserveIconScale` is set, this will be the item used for previewing in the config menu. |
 | `SourceTextures` | List<string> | _null_ | Source textures where your sprites are on. You can give multiple source texture options here, and DISCO will allow players to choose which option they want to use via in-game configuration menu. Comma separated strings are accepted, which also mean you can put content patcher tokens here too. |
 | `SourceSpritePerIndex` | uint | _null_ | This is used to set your expected sprite per index for the given source texture, must be 1 or greater. See [this section](#sprite-per-index) for more details. |
 | `PreserveIconScale` | float | 0 | A draw scale for the preserved icon. When this is greater than zero, an icon of the item used to flavor this item is drawn on top. |
-| `PreserveIconOffset` | Vector2 | 0,0 | A draw offset for the preserve icon. This is used to change the position of the preserve icon being drawn. |
+| `PreserveIconOffset` | Vector2 | 0,0 | A draw offset for the preserve icon. This is relative to the top left pixel of the icon. |
 | `Rules` | List<**SpriteIndexRule**> | List of rules used to pick dynamic sprite index. |
 
 #### SpriteIndexReqs
