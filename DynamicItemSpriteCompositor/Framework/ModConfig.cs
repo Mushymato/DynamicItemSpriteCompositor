@@ -10,8 +10,7 @@ public class ModConfigData
 {
     // ModId -> Key -> Texture
     public Dictionary<string, Dictionary<string, TextureOption>> ContentPackTextureOptions { get; set; } = [];
-
-    public bool DisplayPreserveItemIconInMenus { get; set; } = false;
+    public bool DisplayPreserveItemIcon { get; set; } = false;
 }
 
 public sealed class ModConfigHelper(IModHelper helper, IManifest mod)

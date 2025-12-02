@@ -193,7 +193,12 @@ internal static class Patches
         float layerDepth
     )
     {
-        if (holder == null || obj.preservedParentSheetIndex.Value is not string preserveId)
+        if (
+            !ModEntry.config.Data.DisplayPreserveItemIcon
+            || obj.bigCraftable.Value
+            || holder == null
+            || obj.preservedParentSheetIndex.Value is not string preserveId
+        )
             return;
         if (
             holder.TryGetPreserveIconDraw(out float scale, out Vector2 offset)
@@ -233,14 +238,12 @@ internal static class Patches
         if (__state.Value.Item1 is ItemSpriteIndexHolder holder)
         {
             holder.UnsetDrawParsedItemData(obj);
-            if (!obj.bigCraftable.Value)
-                TryDrawPreserveIcon(holder, obj, spriteBatch, x, y, alpha, baseScale, layerDepth);
+            TryDrawPreserveIcon(holder, obj, spriteBatch, x, y, alpha, baseScale, layerDepth);
         }
         if (__state.Value.Item2 is ItemSpriteIndexHolder heldHolder)
         {
             heldHolder.UnsetDrawParsedItemData(obj.heldObject.Value);
-            if (!obj.bigCraftable.Value)
-                TryDrawPreserveIcon(heldHolder, obj.heldObject.Value, spriteBatch, x, y, alpha, baseScale, layerDepth);
+            TryDrawPreserveIcon(heldHolder, obj.heldObject.Value, spriteBatch, x, y, alpha, baseScale, layerDepth);
         }
     }
 
