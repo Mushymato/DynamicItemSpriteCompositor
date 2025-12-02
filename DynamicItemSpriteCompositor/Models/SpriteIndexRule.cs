@@ -20,17 +20,17 @@ public class SpriteIndexReqs
         {
             if (RequiredContextTags != null)
             {
-                return 1000;
+                return 10;
             }
             if (RequiredColor != null)
             {
-                return 2000;
+                return 20;
             }
             if (RequiredCondition != null)
             {
-                return 3000;
+                return 30;
             }
-            return 9000;
+            return 90;
         }
     }
 }
@@ -58,7 +58,7 @@ public sealed class SpriteIndexRule : SpriteIndexReqs
         get
         {
             precedence ??=
-                PrecedenceMod + ((HeldObject?.PrecedenceMod ?? 0) / 100) + ((Preserve?.PrecedenceMod ?? 0) / 10);
+                PrecedenceMod + ((HeldObject?.PrecedenceMod ?? 0) * 100) + ((Preserve?.PrecedenceMod ?? 0) * 10);
             return precedence.Value;
         }
         set => precedence = value;
