@@ -215,24 +215,19 @@ internal sealed class CheckboxCC(Rectangle bounds, string name, string message) 
 
     internal void Toggle() => State = !State;
 
-    private Vector2? MessageSize
-    {
-        get => field ??= Game1.smallFont.MeasureString(message);
-    }
+    private Vector2 messageSize = Vector2.Zero;
 
     public override void Draw(SpriteBatch b)
     {
-        if (!visible || MessageSize == null)
+        if (!visible)
         {
             return;
         }
-        Color clr = Color.White;
-
         b.Draw(
             Game1.mouseCursors,
             new(bounds.X + 14, bounds.Y + 14, 36, 36),
             State ? OptionsCheckbox.sourceRectChecked : OptionsCheckbox.sourceRectUnchecked,
-            clr,
+            Color.White,
             0,
             Vector2.Zero,
             SpriteEffects.None,
@@ -242,9 +237,15 @@ internal sealed class CheckboxCC(Rectangle bounds, string name, string message) 
             b,
             message,
             Game1.smallFont,
-            new(bounds.X + 64, bounds.Bottom - MessageSize.Value.Y - 14),
+            new(bounds.X + 64, bounds.Bottom - messageSize.Y - 14),
             Game1.textColor
         );
+    }
+
+    internal void RemeasureBounds()
+    {
+        messageSize = Game1.smallFont.MeasureString(message);
+        bounds.Width = (int)(64 + messageSize.X + ModSpritePicker.PADDING * 2);
     }
 }
 
@@ -253,7 +254,7 @@ internal sealed class ModSpritePicker : IClickableMenu
     internal const int MARGIN = 16;
     internal const int PADDING = 8;
 
-    internal const int ATLAS_ROW_CNT = 5;
+    internal const int ATLAS_ROW_CNT = 6;
     internal const int ATLAS_COL_CNT = 2;
     internal const int TEXTURE_ROW_CNT = 6;
     internal const int TEXTURE_COL_CNT = 9;
@@ -292,10 +293,13 @@ internal sealed class ModSpritePicker : IClickableMenu
     private readonly ArrowCC Mod_R = new(new(0, 0, 64, 64), "Mod_R") { CursorsSourceRect = new(0, 192, 64, 64) };
 
     private readonly CheckboxCC PreserveIconCheck;
+    private readonly string versionString;
+    private Vector2 versionStringSize;
 
     internal ModSpritePicker(
         IModHelper helper,
         ModConfigHelper config,
+        string versionString,
         Dictionary<IAssetName, ModProidedDataHolder> modDataAssets,
         Action<ItemSpriteRuleAtlas, bool> updateForRuleAtlas
     )
@@ -309,13 +313,14 @@ internal sealed class ModSpritePicker : IClickableMenu
     {
         this.helper = helper;
         this.config = config;
+        this.versionString = versionString;
         this.modDataHolders = modDataAssets.Values.ToList();
         this.updateForRuleAtlas = updateForRuleAtlas;
 
         Mod_L.BaseX = 0;
-        Mod_L.BaseY = -64 - PADDING;
+        Mod_L.BaseY = -48 - PADDING;
         Mod_R.BaseX = width - 64;
-        Mod_R.BaseY = -64 - PADDING;
+        Mod_R.BaseY = Mod_L.BaseY;
 
         int cellWidth = (64 + PADDING * 3) * TEXTURE_COL_CNT / 2;
         int cellHeight = 64 + PADDING * 3;
@@ -352,7 +357,7 @@ internal sealed class ModSpritePicker : IClickableMenu
         )
         {
             BaseX = MARGIN,
-            BaseY = MARGIN + (PADDING + cellHeight) * ATLAS_ROW_CNT,
+            BaseY = height,
             upNeighborID = AtlasPicks.LastOrDefault()?.myID ?? ClickableComponent.ID_ignore,
             leftNeighborID = ClickableComponent.ID_ignore,
             rightNeighborID = ClickableComponent.ID_ignore,
@@ -404,6 +409,8 @@ internal sealed class ModSpritePicker : IClickableMenu
     private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
     {
         config.SetupGMCM(this);
+        PreserveIconCheck.RemeasureBounds();
+        versionStringSize = Game1.smallFont.MeasureString(versionString);
     }
 
     public static void DrawWithDisplayInfo(
@@ -473,6 +480,28 @@ internal sealed class ModSpritePicker : IClickableMenu
             Game1.menuTexture,
             MenuRectBG,
             xPositionOnScreen,
+            yPositionOnScreen + height - 16,
+            width,
+            88,
+            Color.White
+        );
+        PreserveIconCheck.Draw(b);
+        Utility.drawTextWithShadow(
+            b,
+            versionString,
+            Game1.smallFont,
+            new Vector2(
+                xPositionOnScreen + width - versionStringSize.X - MARGIN - PADDING,
+                PreserveIconCheck.bounds.Bottom - versionStringSize.Y - 14
+            ),
+            Game1.textColor
+        );
+
+        drawTextureBox(
+            b,
+            Game1.menuTexture,
+            MenuRectBG,
+            xPositionOnScreen,
             yPositionOnScreen,
             width,
             height,
@@ -484,11 +513,14 @@ internal sealed class ModSpritePicker : IClickableMenu
                 b,
                 CurrentMod.Mod.Name,
                 xPositionOnScreen + width / 2,
-                yPositionOnScreen - 64
+                yPositionOnScreen - 48
             );
-            Mod_L.Draw(b);
-            Mod_R.Draw(b);
-            PreserveIconCheck.Draw(b);
+
+            if (modDataHolders.Count > 1)
+            {
+                Mod_L.Draw(b);
+                Mod_R.Draw(b);
+            }
             DrawWithDisplayInfo(b, AtlasPicks, AtlasPicksDisplay, AtlasPicksDisplayIdx);
         }
         else
@@ -498,7 +530,7 @@ internal sealed class ModSpritePicker : IClickableMenu
                 b,
                 $"{CurrentMod.Mod.Name} - {aDisplay.Label}",
                 xPositionOnScreen + width / 2,
-                yPositionOnScreen - 64
+                yPositionOnScreen - 48
             );
 
             ItemSpriteRuleAtlas atlas = aDisplay.Atlas;
@@ -516,24 +548,27 @@ internal sealed class ModSpritePicker : IClickableMenu
 
     public override void receiveLeftClick(int x, int y, bool playSound = true)
     {
+        if (PreserveIconCheck.bounds.Contains(x, y))
+        {
+            PreserveIconCheck.Toggle();
+            return;
+        }
         if (AtlasCurrIdx < 0)
         {
-            if (Mod_L.bounds.Contains(x, y))
+            if (modDataHolders.Count > 1)
             {
-                PrevMod();
-                return;
+                if (Mod_L.bounds.Contains(x, y))
+                {
+                    PrevMod();
+                    return;
+                }
+                else if (Mod_R.bounds.Contains(x, y))
+                {
+                    NextMod();
+                    return;
+                }
             }
-            else if (Mod_R.bounds.Contains(x, y))
-            {
-                NextMod();
-                return;
-            }
-            else if (PreserveIconCheck.bounds.Contains(x, y))
-            {
-                PreserveIconCheck.Toggle();
-                return;
-            }
-            else if (TryCheckBounds(AtlasPicks, AtlasPicksDisplay, AtlasPicksDisplayIdx, x, y, out int index))
+            if (TryCheckBounds(AtlasPicks, AtlasPicksDisplay, AtlasPicksDisplayIdx, x, y, out int index))
             {
                 AtlasCurrIdx = index;
                 TexturePicksDisplayIdx = 0;
