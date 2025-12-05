@@ -806,17 +806,17 @@ internal sealed class ModSpritePicker : IClickableMenu
             ];
             DisplayInfo? preserveDisplay = null;
             if (
-                ruleAtlas.PreserveIconScale > 0
+                ruleAtlas.SubIconScale > 0
                 && ruleAtlas.TypeIdentifier == "(O)"
-                && ruleAtlas.ConfigIconPreserveItemId != null
-                && ItemRegistry.GetData(ruleAtlas.ConfigIconPreserveItemId) is ParsedItemData preserveData
+                && ruleAtlas.ConfigSubIconItemId != null
+                && ItemRegistry.GetData(ruleAtlas.ConfigSubIconItemId) is ParsedItemData preserveData
             )
             {
                 preserveDisplay = new(preserveData.GetTexture(), preserveData.GetSourceRect())
                 {
-                    XOffset = ruleAtlas.PreserveIconOffset.X,
-                    YOffset = ruleAtlas.PreserveIconOffset.Y,
-                    Scale = 4 * ruleAtlas.PreserveIconScale,
+                    XOffset = ruleAtlas.SubIconOffset.X,
+                    YOffset = ruleAtlas.SubIconOffset.Y,
+                    Scale = 4 * ruleAtlas.SubIconScale,
                 };
             }
             foreach (SourceTextureOption option in ruleAtlas.SourceTextureOptions)

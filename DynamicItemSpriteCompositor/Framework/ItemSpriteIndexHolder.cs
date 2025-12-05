@@ -1,5 +1,4 @@
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
 
 namespace DynamicItemSpriteCompositor.Framework;
@@ -62,7 +61,14 @@ internal sealed record ItemSpriteIndexHolder()
 
     internal bool NeedReapply(SObject obj)
     {
-        if (NeedReapplyNextDraw || DynamicMethods.Item_get_contextTagsDirty(obj))
+        if (DynamicMethods.Item_get_contextTagsDirty(obj))
+        {
+            NeedReapplyNextDraw = false;
+            // make sure context tags become not dirty
+            obj.GetContextTags();
+            return true;
+        }
+        if (NeedReapplyNextDraw)
         {
             NeedReapplyNextDraw = false;
             return true;
@@ -70,7 +76,7 @@ internal sealed record ItemSpriteIndexHolder()
         return false;
     }
 
-    internal bool TryGetPreserveIconDraw(out float scale, out Vector2 offset)
+    internal bool TryGetSubIconDraw(out float scale, out Vector2 offset)
     {
         scale = 0f;
         offset = Vector2.Zero;
@@ -78,8 +84,8 @@ internal sealed record ItemSpriteIndexHolder()
         {
             return false;
         }
-        scale = pickedAtlas.Atlas.PreserveIconScale;
-        offset = pickedAtlas.Atlas.PreserveIconOffset;
+        scale = pickedAtlas.Atlas.SubIconScale;
+        offset = pickedAtlas.Atlas.SubIconOffset;
         return scale > 0f;
     }
 }

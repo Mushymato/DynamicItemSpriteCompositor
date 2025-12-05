@@ -201,7 +201,7 @@ internal static class Patches
         )
             return;
         if (
-            holder.TryGetPreserveIconDraw(out float scale, out Vector2 offset)
+            holder.TryGetSubIconDraw(out float scale, out Vector2 offset)
             && ItemRegistry.GetData(preserveId) is ParsedItemData data
         )
         {
