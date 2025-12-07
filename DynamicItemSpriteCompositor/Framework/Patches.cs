@@ -243,7 +243,8 @@ internal static class Patches
         if (__state.Value.Item2 is ItemSpriteIndexHolder heldHolder)
         {
             heldHolder.UnsetDrawParsedItemData(obj.heldObject.Value);
-            TryDrawPreserveIcon(heldHolder, obj.heldObject.Value, spriteBatch, x, y, alpha, baseScale, layerDepth);
+            if (!obj.bigCraftable.Value || obj.readyForHarvest.Value)
+                TryDrawPreserveIcon(heldHolder, obj.heldObject.Value, spriteBatch, x, y, alpha, baseScale, layerDepth);
         }
     }
 

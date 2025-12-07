@@ -1,3 +1,4 @@
+using System.Buffers;
 using DynamicItemSpriteCompositor.Models;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -43,10 +44,11 @@ public sealed record AtlasCtx(ItemSpriteRuleAtlas Atlas, Point TextureSize, Poin
         compTx ??= new(Game1.graphics.GraphicsDevice, TextureSize.X, TextureSize.Y);
 
         Color[] targetData = new Color[compTx.GetElementCount()];
+        // Color[] targetData = ArrayPool<Color>.Shared.Rent(compTx.GetElementCount());
         Array.Fill(targetData, Color.Transparent);
         ModEntry.LogDebug($"Comp: {compTx.Width}x{compTx.Height}");
 
-        Color[] sourceData = new Color[srcTx.GetElementCount()];
+        Color[] sourceData = ArrayPool<Color>.Shared.Rent(srcTx.GetElementCount());
         ModEntry.LogDebug($"Atlas: {Atlas.ChosenSourceTexture.SourceTextureAsset}");
         srcTx.GetData(sourceData, 0, srcTx.GetElementCount());
 
@@ -73,6 +75,9 @@ public sealed record AtlasCtx(ItemSpriteRuleAtlas Atlas, Point TextureSize, Poin
         compTx.SetData(targetData);
         compTx.Name = Atlas.ChosenSourceTexture.Texture;
         IsTxValid = true;
+
+        // ArrayPool<Color>.Shared.Return(targetData);
+        ArrayPool<Color>.Shared.Return(sourceData);
 
         return compTx;
     }
