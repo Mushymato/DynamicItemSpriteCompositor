@@ -43,8 +43,8 @@ public sealed record AtlasCtx(ItemSpriteRuleAtlas Atlas, Point TextureSize, Poin
 
         compTx ??= new(Game1.graphics.GraphicsDevice, TextureSize.X, TextureSize.Y);
 
-        Color[] targetData = new Color[compTx.GetElementCount()];
-        // Color[] targetData = ArrayPool<Color>.Shared.Rent(compTx.GetElementCount());
+        // Color[] targetData = new Color[compTx.GetElementCount()];
+        Color[] targetData = ArrayPool<Color>.Shared.Rent(compTx.GetElementCount());
         Array.Fill(targetData, Color.Transparent);
         ModEntry.LogDebug($"Comp: {compTx.Width}x{compTx.Height}");
 
@@ -72,11 +72,11 @@ public sealed record AtlasCtx(ItemSpriteRuleAtlas Atlas, Point TextureSize, Poin
             }
         }
 
-        compTx.SetData(targetData);
+        compTx.SetData(targetData, 0, compTx.GetElementCount());
         compTx.Name = Atlas.ChosenSourceTexture.Texture;
         IsTxValid = true;
 
-        // ArrayPool<Color>.Shared.Return(targetData);
+        ArrayPool<Color>.Shared.Return(targetData);
         ArrayPool<Color>.Shared.Return(sourceData);
 
         return compTx;
