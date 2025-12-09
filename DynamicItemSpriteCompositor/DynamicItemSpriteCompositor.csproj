@@ -15,9 +15,9 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Name>Dynamic Item Sprite Compositor</Name>
+    <Name>DISCO</Name>
     <Authors>mushymato</Authors>
-    <Description>Allow content packs to give items dynamic sprites.</Description>
+    <Description>Dynamic Item Sprite Compositor: a mod for giving items dynamic sprites.</Description>
     <UniqueId>mushymato.DISCO</UniqueId>
     <UpdateKeys>GitHub:Mushymato/DynamicItemSpriteCompositor</UpdateKeys>
     <Version>0.7.5</Version>
