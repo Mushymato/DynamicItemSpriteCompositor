@@ -57,12 +57,16 @@ public sealed class ModEntry : Mod
                 Vector2 pos = new(x, y);
                 if (layer.Tiles[x, y] is null)
                     continue;
-                // SObject jelly = ItemRegistry.Create<SObject>("(O)344", 1);
                 if (Utility.CreateFlavoredItem("Jelly", "(O)613") is SObject jelly)
                 {
                     Game1.currentLocation.objects.Remove(pos);
                     Game1.currentLocation.objects.Add(pos, jelly);
                 }
+                // if (ItemRegistry.Create<SObject>("(BC)12", 1) is SObject keg)
+                // {
+                //     Game1.currentLocation.objects.Remove(pos);
+                //     Game1.currentLocation.objects.Add(pos, keg);
+                // }
             }
         }
     }

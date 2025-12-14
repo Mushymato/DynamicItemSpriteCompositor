@@ -43,7 +43,6 @@ public sealed record AtlasCtx(ItemSpriteRuleAtlas Atlas, Point TextureSize, Poin
 
         compTx ??= new(Game1.graphics.GraphicsDevice, TextureSize.X, TextureSize.Y);
 
-        // Color[] targetData = new Color[compTx.GetElementCount()];
         Color[] targetData = ArrayPool<Color>.Shared.Rent(compTx.GetElementCount());
         Array.Fill(targetData, Color.Transparent);
         ModEntry.LogDebug($"Comp: {compTx.Width}x{compTx.Height}");
@@ -454,8 +453,9 @@ public sealed class ItemSpriteComp()
     /// <param name="texture">The texture to adjust.</param>
     private static Texture2D UnPremultiplyTransparency(Texture2D texture)
     {
-        Color[] data = new Color[texture.Width * texture.Height];
-        texture.GetData(data);
+        int textureSize = texture.Width * texture.Height;
+        Color[] data = ArrayPool<Color>.Shared.Rent(textureSize);
+        texture.GetData(data, 0, textureSize);
 
         for (int i = 0; i < data.Length; i++)
         {
@@ -472,7 +472,7 @@ public sealed class ItemSpriteComp()
         }
 
         Texture2D result = new(texture.GraphicsDevice ?? Game1.graphics.GraphicsDevice, texture.Width, texture.Height);
-        result.SetData(data);
+        result.SetData(data, 0, textureSize);
         return result;
     }
     #endregion

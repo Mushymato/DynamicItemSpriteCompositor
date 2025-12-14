@@ -19,7 +19,7 @@
     <Authors>mushymato</Authors>
     <Description>Dynamic Item Sprite Compositor: a mod for giving items dynamic sprites.</Description>
     <UniqueId>mushymato.DISCO</UniqueId>
-    <UpdateKeys>GitHub:Mushymato/DynamicItemSpriteCompositor</UpdateKeys>
+    <UpdateKeys>Nexus:39587,GitHub:Mushymato/DynamicItemSpriteCompositor</UpdateKeys>
     <Version>0.7.5</Version>
     <MinimumApiVersion_Behavior>UpdateFull</MinimumApiVersion_Behavior>
     <MinimumGameVersion_Behavior>UpdateFull</MinimumGameVersion_Behavior>
