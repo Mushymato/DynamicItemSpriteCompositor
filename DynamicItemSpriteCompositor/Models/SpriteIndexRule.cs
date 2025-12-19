@@ -37,7 +37,7 @@ public class SpriteIndexReqs
 
 public sealed class SpriteIndexRule : SpriteIndexReqs
 {
-    private string IdImpl = "";
+    private string? IdImpl = null;
     public string Id
     {
         get => IdImpl ??= string.Join('|', SpriteIndexList.OrderBy(idx => idx).Select(idx => idx.ToString()));
