@@ -1,6 +1,7 @@
 global using SObject = StardewValley.Object;
 using System.Diagnostics;
 using DynamicItemSpriteCompositor.Framework;
+using DynamicItemSpriteCompositor.Integration;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewValley;
@@ -21,12 +22,15 @@ public sealed class ModEntry : Mod
     internal static ItemSpriteManager manager = null!;
     internal static ModConfigHelper config = null!;
     internal static ModSpritePicker picker = null!;
+    internal static BetterArtisianGoodsCompat bagiCompat = null!;
 
     public override void Entry(IModHelper helper)
     {
         mon = Monitor;
 
-        if (ItemSpriteManager.Make(helper) is not ItemSpriteManager mngr)
+        bagiCompat = new(helper);
+
+        if (ItemSpriteManager.Make(helper, bagiCompat) is not ItemSpriteManager mngr)
         {
             return;
         }

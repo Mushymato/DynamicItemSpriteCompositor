@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using DynamicItemSpriteCompositor.Integration;
 using DynamicItemSpriteCompositor.Models;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
@@ -19,6 +20,8 @@ internal sealed record ModProidedDataHolder(IAssetName AssetName, IManifest Mod)
             IsValid = value != null;
         }
     } = [];
+
+    internal Func<Dictionary<string, ItemSpriteRuleAtlas>> loadFrom = () => [];
 
     internal bool TryGetModRuleAtlas(
         IGameContentHelper content,

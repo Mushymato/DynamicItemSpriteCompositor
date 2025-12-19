@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using DynamicItemSpriteCompositor.Integration;
 using DynamicItemSpriteCompositor.Models;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -20,7 +21,7 @@ internal sealed class ItemSpriteManager
     private readonly HashSet<string> needItemSpriteCompRecheck = [];
     private readonly ConditionalWeakTable<Item, ItemSpriteIndexHolder> watchedItems = [];
 
-    internal static ItemSpriteManager? Make(IModHelper helper)
+    internal static ItemSpriteManager? Make(IModHelper helper, BetterArtisianGoodsCompat bagiCompat)
     {
         Dictionary<IAssetName, ModProidedDataHolder> modDataAssets = [];
         foreach (IModInfo info in helper.ModRegistry.GetAll())
@@ -31,8 +32,16 @@ internal sealed class ItemSpriteManager
                     string.Concat(ModEntry.ModId, "/Data/", info.Manifest.UniqueID)
                 );
                 modDataAssets[modAssetName] = new(modAssetName, info.Manifest);
-                ModEntry.Log($"Tracking '{modAssetName}' asset for '{info.Manifest.UniqueID}'");
+                ModEntry.Log($"Tracking '{modAssetName}' asset for '{info.Manifest.Name}'");
             }
+        }
+        foreach (BAGIPackContext bagiCtx in bagiCompat.packs)
+        {
+            modDataAssets[bagiCtx.DataAsset] = new(bagiCtx.DataAsset, bagiCtx.ModManifest)
+            {
+                loadFrom = bagiCtx.LoadFromBAGI,
+            };
+            ModEntry.Log($"Tracking '{bagiCtx.DataAsset}' BAGI compat asset for '{bagiCtx.ModManifest.Name}'");
         }
 
         if (modDataAssets.Count == 0)
@@ -198,9 +207,9 @@ internal sealed class ItemSpriteManager
 
     private void OnAssetRequested(object? sender, AssetRequestedEventArgs e)
     {
-        if (modDataAssets.ContainsKey(e.NameWithoutLocale))
+        if (modDataAssets.TryGetValue(e.NameWithoutLocale, out ModProidedDataHolder? holder))
         {
-            e.LoadFrom(() => new Dictionary<string, ItemSpriteRuleAtlas>(), AssetLoadPriority.Exclusive);
+            e.LoadFrom(holder.loadFrom, AssetLoadPriority.Exclusive);
         }
         else if (e.Name.IsEquivalentTo("Data/BigCraftables"))
         {
