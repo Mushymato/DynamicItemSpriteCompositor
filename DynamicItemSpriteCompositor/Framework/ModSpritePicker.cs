@@ -38,7 +38,7 @@ internal record DisplayInfo(Texture2D Icon, Rectangle IconSourceRect)
             SpriteEffects.None,
             1f
         );
-        if (ModEntry.config.Data.DisplayPreserveItemIcon)
+        if (ModEntry.config.Data.SubIconDisplay != SubIconDisplayMode.None)
             PreserveIcon?.DrawIcon(b, bounds, PaddingX, PaddingY);
     }
 }
@@ -200,22 +200,27 @@ internal sealed class ArrowCC(Rectangle bounds, string name) : RelativeCC(bounds
     }
 }
 
-internal sealed class CheckboxCC(Rectangle bounds, string name, string message) : RelativeCC(bounds, name)
+internal sealed class CycleboxCC<TEnum>(Rectangle bounds, string name, TEnum defaultValue, List<TEnum> orderedEnums)
+    : RelativeCC(bounds, name)
 {
-    internal EventHandler<bool>? StateChanged;
-    internal bool State
+    private static readonly Rectangle CursorsButtonRect = new(432, 439, 9, 9);
+    internal EventHandler<TEnum>? StateChanged;
+    internal TEnum State => orderedEnums[index];
+
+    internal int index = orderedEnums.IndexOf(defaultValue);
+
+    internal void Toggle()
     {
-        get => field;
-        set
-        {
-            field = value;
-            StateChanged?.Invoke(this, field);
-        }
+        index += 1;
+        index %= orderedEnums.Count;
+        StateChanged?.Invoke(this, State);
+        optionMessage = ModEntry.translation.Get($"config.SubIconDisplay.{State}.name");
     }
 
-    internal void Toggle() => State = !State;
-
+    internal string message = ModEntry.translation.Get("config.SubIconDisplay.name");
+    private string optionMessage = ModEntry.translation.Get($"config.SubIconDisplay.{defaultValue}.name");
     private Vector2 messageSize = Vector2.Zero;
+    private Vector2 optionMessageSize = Vector2.Zero;
 
     public override void Draw(SpriteBatch b)
     {
@@ -223,21 +228,33 @@ internal sealed class CheckboxCC(Rectangle bounds, string name, string message) 
         {
             return;
         }
-        b.Draw(
+        IClickableMenu.drawTextureBox(
+            b,
             Game1.mouseCursors,
-            new(bounds.X + 14, bounds.Y + 14, 36, 36),
-            State ? OptionsCheckbox.sourceRectChecked : OptionsCheckbox.sourceRectUnchecked,
+            CursorsButtonRect,
+            bounds.X,
+            bounds.Y,
+            bounds.Width,
+            bounds.Height,
             Color.White,
-            0,
-            Vector2.Zero,
-            SpriteEffects.None,
-            1f
+            scale: 4,
+            drawShadow: false
         );
         Utility.drawTextWithShadow(
             b,
             message,
             Game1.smallFont,
-            new(bounds.X + 64, bounds.Bottom - messageSize.Y - 14),
+            new(bounds.X + ModSpritePicker.PADDING, bounds.Bottom - messageSize.Y - 14),
+            Game1.textColor
+        );
+        Utility.drawTextWithShadow(
+            b,
+            optionMessage,
+            Game1.smallFont,
+            new(
+                bounds.X + ModSpritePicker.PADDING + messageSize.X + ModSpritePicker.PADDING,
+                bounds.Bottom - optionMessageSize.Y - 14
+            ),
             Game1.textColor
         );
     }
@@ -245,7 +262,25 @@ internal sealed class CheckboxCC(Rectangle bounds, string name, string message) 
     internal void RemeasureBounds()
     {
         messageSize = Game1.smallFont.MeasureString(message);
-        bounds.Width = (int)(64 + messageSize.X + ModSpritePicker.PADDING * 2);
+        optionMessageSize = Vector2.Zero;
+        foreach (TEnum enumVal in orderedEnums)
+        {
+            Vector2 enumValSize = Game1.smallFont.MeasureString(
+                ModEntry.translation.Get($"config.SubIconDisplay.{enumVal}.name")
+            );
+            if (enumValSize.X > optionMessageSize.X)
+            {
+                optionMessageSize = enumValSize;
+            }
+        }
+        bounds.Width = (int)(optionMessageSize.X + messageSize.X + ModSpritePicker.PADDING * 4);
+    }
+
+    internal void UpdateTranslationMessages()
+    {
+        message = ModEntry.translation.Get("config.SubIconDisplay.name");
+        optionMessage = ModEntry.translation.Get($"config.SubIconDisplay.{State}.name");
+        RemeasureBounds();
     }
 }
 
@@ -292,7 +327,7 @@ internal sealed class ModSpritePicker : IClickableMenu
     private readonly ArrowCC Mod_L = new(new(0, 0, 64, 64), "Mod_L") { CursorsSourceRect = new(0, 256, 64, 64) };
     private readonly ArrowCC Mod_R = new(new(0, 0, 64, 64), "Mod_R") { CursorsSourceRect = new(0, 192, 64, 64) };
 
-    private readonly CheckboxCC PreserveIconCheck;
+    private readonly CycleboxCC<SubIconDisplayMode> SubIconDisplay;
     private readonly string versionString;
     private Vector2 versionStringSize;
 
@@ -350,10 +385,11 @@ internal sealed class ModSpritePicker : IClickableMenu
             );
         }
 
-        PreserveIconCheck = new(
+        SubIconDisplay = new(
             new Rectangle(0, 0, width - MARGIN * 2, 64),
-            "PreserveIconCheck",
-            helper.Translation.Get("config.DisplayPreserveItemIcon.name")
+            "SubIconDisplay",
+            ModEntry.config.Data.SubIconDisplay,
+            Enum.GetValues<SubIconDisplayMode>().ToList()
         )
         {
             BaseX = MARGIN,
@@ -363,9 +399,8 @@ internal sealed class ModSpritePicker : IClickableMenu
             rightNeighborID = ClickableComponent.ID_ignore,
             downNeighborID = ClickableComponent.ID_ignore,
             myID = 1001,
-            State = ModEntry.config.Data.DisplayPreserveItemIcon,
         };
-        PreserveIconCheck.StateChanged += OnPreserveIconCheckChange;
+        SubIconDisplay.StateChanged += OnSubIconDisplayChanged;
 
         cellWidth = 64 + PADDING * 2;
         cellHeight = 64 + PADDING * 2;
@@ -399,18 +434,24 @@ internal sealed class ModSpritePicker : IClickableMenu
             ConsolePickUI
         );
         helper.Events.GameLoop.GameLaunched += OnGameLaunched;
+        helper.Events.Content.LocaleChanged += OnLocaleChanged;
     }
 
-    private void OnPreserveIconCheckChange(object? sender, bool state)
+    private void OnSubIconDisplayChanged(object? sender, SubIconDisplayMode state)
     {
-        ModEntry.config.Data.DisplayPreserveItemIcon = state;
+        ModEntry.config.Data.SubIconDisplay = state;
     }
 
     private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
     {
         config.SetupGMCM(this);
-        PreserveIconCheck.RemeasureBounds();
+        SubIconDisplay.RemeasureBounds();
         versionStringSize = Game1.smallFont.MeasureString(versionString);
+    }
+
+    private void OnLocaleChanged(object? sender, LocaleChangedEventArgs e)
+    {
+        SubIconDisplay.UpdateTranslationMessages();
     }
 
     public static void DrawWithDisplayInfo(
@@ -485,14 +526,13 @@ internal sealed class ModSpritePicker : IClickableMenu
             88,
             Color.White
         );
-        PreserveIconCheck.Draw(b);
         Utility.drawTextWithShadow(
             b,
             versionString,
             Game1.smallFont,
             new Vector2(
                 xPositionOnScreen + width - versionStringSize.X - MARGIN - PADDING,
-                PreserveIconCheck.bounds.Bottom - versionStringSize.Y - 14
+                SubIconDisplay.bounds.Bottom - versionStringSize.Y - 14
             ),
             Game1.textColor
         );
@@ -543,14 +583,15 @@ internal sealed class ModSpritePicker : IClickableMenu
             );
         }
 
+        SubIconDisplay.Draw(b);
         drawMouse(b, ignore_transparency: true);
     }
 
     public override void receiveLeftClick(int x, int y, bool playSound = true)
     {
-        if (PreserveIconCheck.bounds.Contains(x, y))
+        if (SubIconDisplay.bounds.Contains(x, y))
         {
-            PreserveIconCheck.Toggle();
+            SubIconDisplay.Toggle();
             return;
         }
         if (AtlasCurrIdx < 0)
@@ -660,7 +701,7 @@ internal sealed class ModSpritePicker : IClickableMenu
             {
                 if (!this.ScrollGrid(-1))
                 {
-                    currentlySnappedComponent = getComponentWithID(PreserveIconCheck.myID);
+                    currentlySnappedComponent = getComponentWithID(SubIconDisplay.myID);
                     snapCursorToCurrentSnappedComponent();
                 }
                 return;
@@ -745,7 +786,7 @@ internal sealed class ModSpritePicker : IClickableMenu
         allClickableComponents.Clear();
         allClickableComponents.AddRange(AtlasPicks);
         allClickableComponents.AddRange(TexturePicks);
-        allClickableComponents.Add(PreserveIconCheck);
+        allClickableComponents.Add(SubIconDisplay);
     }
 
     private void RecenterMenu()
@@ -765,7 +806,7 @@ internal sealed class ModSpritePicker : IClickableMenu
 
         Mod_L.Reposition(xPositionOnScreen, yPositionOnScreen);
         Mod_R.Reposition(xPositionOnScreen, yPositionOnScreen);
-        PreserveIconCheck.Reposition(xPositionOnScreen, yPositionOnScreen);
+        SubIconDisplay.Reposition(xPositionOnScreen, yPositionOnScreen);
     }
 
     public override void gameWindowSizeChanged(Rectangle oldBounds, Rectangle newBounds)
@@ -804,7 +845,7 @@ internal sealed class ModSpritePicker : IClickableMenu
             [
                 new(parsedItemData.ItemType.GetErrorTexture(), parsedItemData.ItemType.GetErrorSourceRect()),
             ];
-            DisplayInfo? preserveDisplay = null;
+            DisplayInfo? subIconDisplayInfo = null;
             if (
                 ruleAtlas.SubIconScale > 0
                 && ruleAtlas.TypeIdentifier == "(O)"
@@ -812,7 +853,7 @@ internal sealed class ModSpritePicker : IClickableMenu
                 && ItemRegistry.GetData(ruleAtlas.ConfigSubIconItemId) is ParsedItemData preserveData
             )
             {
-                preserveDisplay = new(preserveData.GetTexture(), preserveData.GetSourceRect())
+                subIconDisplayInfo = new(preserveData.GetTexture(), preserveData.GetSourceRect())
                 {
                     XOffset = ruleAtlas.SubIconOffset.X,
                     YOffset = ruleAtlas.SubIconOffset.Y,
@@ -831,14 +872,14 @@ internal sealed class ModSpritePicker : IClickableMenu
                     )
                 )
                 {
-                    PreserveIcon = preserveDisplay,
+                    PreserveIcon = subIconDisplayInfo,
                 };
                 textureDisplayList.Add(iconDisplay);
             }
             DisplayInfo? preserveDisplayAtlas = null;
-            if (preserveDisplay != null)
+            if (subIconDisplayInfo != null)
             {
-                preserveDisplayAtlas = preserveDisplay.ShallowClone();
+                preserveDisplayAtlas = subIconDisplayInfo.ShallowClone();
                 preserveDisplayAtlas.XOffset += PADDING + 64;
             }
             Texture2D currTx = helper.GameContent.Load<Texture2D>(ruleAtlas.ChosenSourceTexture.SourceTextureAsset);

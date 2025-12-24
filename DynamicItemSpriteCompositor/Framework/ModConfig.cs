@@ -6,11 +6,18 @@ namespace DynamicItemSpriteCompositor.Framework;
 
 public sealed record TextureOption(bool Enabled, string Texture);
 
+public enum SubIconDisplayMode
+{
+    None,
+    PackDefined,
+    Always,
+}
+
 public class ModConfigData
 {
     // ModId -> Key -> Texture
     public Dictionary<string, Dictionary<string, TextureOption>> ContentPackTextureOptions { get; set; } = [];
-    public bool DisplayPreserveItemIcon { get; set; } = true;
+    public SubIconDisplayMode SubIconDisplay { get; set; } = SubIconDisplayMode.PackDefined;
 }
 
 public sealed class ModConfigHelper(IModHelper helper, IManifest mod)

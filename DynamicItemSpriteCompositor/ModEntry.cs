@@ -22,11 +22,13 @@ public sealed class ModEntry : Mod
     internal static ItemSpriteManager manager = null!;
     internal static ModConfigHelper config = null!;
     internal static ModSpritePicker picker = null!;
+    internal static ITranslationHelper translation = null!;
     internal static BetterArtisianGoodsCompat bagiCompat = null!;
 
     public override void Entry(IModHelper helper)
     {
         mon = Monitor;
+        translation = helper.Translation;
 
         bagiCompat = new(helper);
 

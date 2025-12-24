@@ -183,7 +183,7 @@ internal static class Patches
     }
 
     private static void TryDrawPreserveIcon(
-        ItemSpriteIndexHolder holder,
+        ItemSpriteIndexHolder? holder,
         SObject obj,
         SpriteBatch spriteBatch,
         float x,
@@ -193,17 +193,26 @@ internal static class Patches
         float layerDepth
     )
     {
-        if (
-            !ModEntry.config.Data.DisplayPreserveItemIcon
-            || obj.bigCraftable.Value
-            || holder == null
-            || obj.preservedParentSheetIndex.Value is not string preserveId
-        )
+        if (obj.bigCraftable.Value || obj.preservedParentSheetIndex.Value is not string preserveId)
             return;
-        if (
-            holder.TryGetSubIconDraw(out float scale, out Vector2 offset)
-            && ItemRegistry.GetData(preserveId) is ParsedItemData data
-        )
+        float scale;
+        Vector2 offset;
+        switch (ModEntry.config.Data.SubIconDisplay)
+        {
+            case SubIconDisplayMode.PackDefined:
+                if (holder == null)
+                    return;
+                if (!holder.TryGetSubIconDraw(out scale, out offset))
+                    return;
+                break;
+            case SubIconDisplayMode.Always:
+                scale = 0.5f;
+                offset = Vector2.Zero;
+                break;
+            default:
+                return;
+        }
+        if (ItemRegistry.GetData(preserveId) is ParsedItemData data)
         {
             // intentionally avoided applying sprite variations on preserve since the item doesn't truly exist
             spriteBatch.Draw(
@@ -231,21 +240,16 @@ internal static class Patches
         float layerDepth
     )
     {
-        if (__state == null)
+        if (__state != null)
         {
-            return;
+            if (__state.Value.Item1 is ItemSpriteIndexHolder holder)
+                holder.UnsetDrawParsedItemData(obj);
+            if (__state.Value.Item2 is ItemSpriteIndexHolder heldHolder)
+                heldHolder.UnsetDrawParsedItemData(obj.heldObject.Value);
         }
-        if (__state.Value.Item1 is ItemSpriteIndexHolder holder)
-        {
-            holder.UnsetDrawParsedItemData(obj);
-            TryDrawPreserveIcon(holder, obj, spriteBatch, x, y, alpha, baseScale, layerDepth);
-        }
-        if (__state.Value.Item2 is ItemSpriteIndexHolder heldHolder)
-        {
-            heldHolder.UnsetDrawParsedItemData(obj.heldObject.Value);
-            if (!obj.bigCraftable.Value || obj.readyForHarvest.Value)
-                TryDrawPreserveIcon(heldHolder, obj.heldObject.Value, spriteBatch, x, y, alpha, baseScale, layerDepth);
-        }
+        TryDrawPreserveIcon(__state?.Item1, obj, spriteBatch, x, y, alpha, baseScale, layerDepth);
+        if (obj.heldObject.Value != null && (!obj.bigCraftable.Value || obj.readyForHarvest.Value))
+            TryDrawPreserveIcon(__state?.Item2, obj.heldObject.Value, spriteBatch, x, y, alpha, baseScale, layerDepth);
     }
 
     private static void SObject_draw_Postfix_Pos(
