@@ -1,6 +1,9 @@
 {
-  "config.SubIconDisplay.name": "Sub-icon Dusplay:",
-  "config.SubIconDisplay.None.name": "None",
+  "config.SubIconDisplay.name": "Sub-icon Display:",
+  "config.SubIconDisplay.None.name": "Hidden",
+  "config.SubIconDisplay.None.desc": "The sub-icon is not shown.",
   "config.SubIconDisplay.PackDefined.name": "Pack Defined",
-  "config.SubIconDisplay.Always.Name": "Always"
+  "config.SubIconDisplay.PackDefined.desc": "The sub-icon is shown if a content pack defined them.",
+  "config.SubIconDisplay.Always.Name": "All Items",
+  "config.SubIconDisplay.Always.desc": "The sub-icon is shown for all flavored items.",
 }

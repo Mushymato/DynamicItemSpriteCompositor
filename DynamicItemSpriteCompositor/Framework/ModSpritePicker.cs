@@ -203,7 +203,9 @@ internal sealed class ArrowCC(Rectangle bounds, string name) : RelativeCC(bounds
 internal sealed class CycleboxCC<TEnum>(Rectangle bounds, string name, TEnum defaultValue, List<TEnum> orderedEnums)
     : RelativeCC(bounds, name)
 {
-    private static readonly Rectangle CursorsButtonRect = new(432, 439, 9, 9);
+    private static readonly Rectangle CursorsButtonRectA = new(403, 373, 9, 9);
+    private static readonly Rectangle CursorsButtonRectB = new(432, 439, 9, 9);
+    private Rectangle CursorsButtonRect = CursorsButtonRectA;
     internal EventHandler<TEnum>? StateChanged;
     internal TEnum State => orderedEnums[index];
 
@@ -215,10 +217,26 @@ internal sealed class CycleboxCC<TEnum>(Rectangle bounds, string name, TEnum def
         index %= orderedEnums.Count;
         StateChanged?.Invoke(this, State);
         optionMessage = ModEntry.translation.Get($"config.SubIconDisplay.{State}.name");
+        optionTooltip = ModEntry.translation.Get($"config.SubIconDisplay.{State}.desc");
+    }
+
+    internal string? Hover(int x, int y)
+    {
+        if (containsPoint(x, y))
+        {
+            CursorsButtonRect = CursorsButtonRectB;
+            return optionTooltip;
+        }
+        else
+        {
+            CursorsButtonRect = CursorsButtonRectA;
+            return null;
+        }
     }
 
     internal string message = ModEntry.translation.Get("config.SubIconDisplay.name");
     private string optionMessage = ModEntry.translation.Get($"config.SubIconDisplay.{defaultValue}.name");
+    private string optionTooltip = ModEntry.translation.Get($"config.SubIconDisplay.{defaultValue}.desc");
     private Vector2 messageSize = Vector2.Zero;
     private Vector2 optionMessageSize = Vector2.Zero;
 
@@ -237,7 +255,7 @@ internal sealed class CycleboxCC<TEnum>(Rectangle bounds, string name, TEnum def
             bounds.Width,
             bounds.Height,
             Color.White,
-            scale: 4,
+            scale: 4f,
             drawShadow: false
         );
         Utility.drawTextWithShadow(
@@ -280,6 +298,7 @@ internal sealed class CycleboxCC<TEnum>(Rectangle bounds, string name, TEnum def
     {
         message = ModEntry.translation.Get("config.SubIconDisplay.name");
         optionMessage = ModEntry.translation.Get($"config.SubIconDisplay.{State}.name");
+        optionTooltip = ModEntry.translation.Get($"config.SubIconDisplay.{State}.desc");
         RemeasureBounds();
     }
 }
@@ -330,6 +349,8 @@ internal sealed class ModSpritePicker : IClickableMenu
     private readonly CycleboxCC<SubIconDisplayMode> SubIconDisplay;
     private readonly string versionString;
     private Vector2 versionStringSize;
+
+    private string? hoverText = null;
 
     internal ModSpritePicker(
         IModHelper helper,
@@ -392,7 +413,7 @@ internal sealed class ModSpritePicker : IClickableMenu
             Enum.GetValues<SubIconDisplayMode>().ToList()
         )
         {
-            BaseX = MARGIN,
+            BaseX = PADDING,
             BaseY = height,
             upNeighborID = AtlasPicks.LastOrDefault()?.myID ?? ClickableComponent.ID_ignore,
             leftNeighborID = ClickableComponent.ID_ignore,
@@ -584,6 +605,8 @@ internal sealed class ModSpritePicker : IClickableMenu
         }
 
         SubIconDisplay.Draw(b);
+        if (hoverText != null)
+            drawHoverText(b, hoverText, Game1.smallFont);
         drawMouse(b, ignore_transparency: true);
     }
 
@@ -680,6 +703,11 @@ internal sealed class ModSpritePicker : IClickableMenu
             }
         }
         base.receiveGamePadButton(button);
+    }
+
+    public override void performHoverAction(int x, int y)
+    {
+        hoverText = SubIconDisplay.Hover(x, y);
     }
 
     public override void receiveScrollWheelAction(int direction)

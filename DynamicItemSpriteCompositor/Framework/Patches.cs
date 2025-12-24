@@ -206,8 +206,11 @@ internal static class Patches
                     return;
                 break;
             case SubIconDisplayMode.Always:
-                scale = 0.5f;
-                offset = Vector2.Zero;
+                if (!(holder?.TryGetSubIconDraw(out scale, out offset) ?? false))
+                {
+                    scale = 0.5f;
+                    offset = Vector2.Zero;
+                }
                 break;
             default:
                 return;
@@ -247,6 +250,8 @@ internal static class Patches
             if (__state.Value.Item2 is ItemSpriteIndexHolder heldHolder)
                 heldHolder.UnsetDrawParsedItemData(obj.heldObject.Value);
         }
+        if (ModEntry.config.Data.SubIconDisplay == SubIconDisplayMode.None)
+            return;
         TryDrawPreserveIcon(__state?.Item1, obj, spriteBatch, x, y, alpha, baseScale, layerDepth);
         if (obj.heldObject.Value != null && (!obj.bigCraftable.Value || obj.readyForHarvest.Value))
             TryDrawPreserveIcon(__state?.Item2, obj.heldObject.Value, spriteBatch, x, y, alpha, baseScale, layerDepth);
