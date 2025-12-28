@@ -91,6 +91,8 @@ internal sealed class BAGIPackContext(IModHelper helper, IContentPack pack, BAGI
         Dictionary<string, string> nameToId = [];
         foreach ((string itemId, ObjectData objData) in Game1.objectData)
         {
+            if (objData.Name == null)
+                continue;
             nameToId[objData.Name] = itemId;
         }
         AddRules(ref modRuleAtlas, ref nameToId, Jelly, data.Fruits, nameof(Jelly), "344");
