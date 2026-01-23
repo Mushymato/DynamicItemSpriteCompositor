@@ -1,0 +1,9 @@
+{
+  "config.SubIconDisplay.name": "迷你图标显示模式：",
+  "config.SubIconDisplay.None.name": "隐藏",
+  "config.SubIconDisplay.None.desc": "不显示迷你图标",
+  "config.SubIconDisplay.PackDefined.name": "内容包",
+  "config.SubIconDisplay.PackDefined.desc": "只有在内容包提供迷你图标时显示",
+  "config.SubIconDisplay.Always.Name": "所有物品",
+  "config.SubIconDisplay.Always.desc": "所有工匠物品均会显示代表口味的迷你图标",
+}

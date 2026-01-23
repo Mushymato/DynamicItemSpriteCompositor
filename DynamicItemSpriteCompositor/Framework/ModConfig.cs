@@ -17,7 +17,7 @@ public class ModConfigData
 {
     // ModId -> Key -> Texture
     public Dictionary<string, Dictionary<string, TextureOption>> ContentPackTextureOptions { get; set; } = [];
-    public SubIconDisplayMode SubIconDisplay { get; set; } = SubIconDisplayMode.PackDefined;
+    public SubIconDisplayMode SubIconDisplay { get; set; } = SubIconDisplayMode.Always;
 }
 
 public sealed class ModConfigHelper(IModHelper helper, IManifest mod)
