@@ -18,7 +18,7 @@ public sealed class ItemSpriteRuleAtlas
     public string LocalItemId { get; set; } = "0";
     public string? ConfigName { get; set; } = null;
     public int? ConfigIconSpriteIndex { get; set; } = null;
-    public string? ConfigSubIconItemId { get; set; } = null;
+    public string? ConfigSubIconItemId { get; set; } = "(O)390";
 
     [JsonConverter(typeof(SourceTexturesConverter))]
     public List<string> SourceTextures { get; set; } = [];
