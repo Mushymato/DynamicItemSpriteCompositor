@@ -10,7 +10,7 @@
     <Nullable>enable</Nullable>
     <LangVersion>preview</LangVersion>
     <EnableHarmony>true</EnableHarmony>
-
+    <ModZipPath>$(MSBuildThisFileDirectory)/../_releases</ModZipPath>
     <!-- <DefineConstants>DEBUG_VERBOSE</DefineConstants> -->
   </PropertyGroup>
 
