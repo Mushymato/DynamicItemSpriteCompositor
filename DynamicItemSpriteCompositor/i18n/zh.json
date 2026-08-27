@@ -1,4 +1,5 @@
 {
+  "config.NoPack.name": "你没有装任何DISCO内容包，\n但你还是可以使用迷你图标",
   "config.SubIconDisplay.name": "迷你图标显示模式：",
   "config.SubIconDisplay.None.name": "隐藏",
   "config.SubIconDisplay.None.desc": "不显示迷你图标",

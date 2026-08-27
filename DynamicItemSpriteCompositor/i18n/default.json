@@ -1,4 +1,5 @@
 {
+  "config.NoPack.name": "You have no DISCO content packs installed,\nbut you can still use sub-icons.",
   "config.SubIconDisplay.name": "Sub-icon Display:",
   "config.SubIconDisplay.None.name": "Hidden",
   "config.SubIconDisplay.None.desc": "The sub-icon is not shown.",

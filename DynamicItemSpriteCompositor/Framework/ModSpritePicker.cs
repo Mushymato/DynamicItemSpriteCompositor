@@ -356,7 +356,7 @@ internal sealed class ModSpritePicker : IClickableMenu
         IModHelper helper,
         ModConfigHelper config,
         string versionString,
-        Dictionary<IAssetName, ModProidedDataHolder> modDataAssets,
+        IReadOnlyDictionary<IAssetName, ModProidedDataHolder> modDataAssets,
         Action<ItemSpriteRuleAtlas, bool> updateForRuleAtlas
     )
         : base(
@@ -518,10 +518,6 @@ internal sealed class ModSpritePicker : IClickableMenu
 
     public override void draw(SpriteBatch b)
     {
-        if (CurrentMod == null)
-        {
-            return;
-        }
         if (GetParentMenu() is TitleMenu titleMenu)
         {
             b.Draw(
@@ -568,6 +564,28 @@ internal sealed class ModSpritePicker : IClickableMenu
             height,
             Color.White
         );
+
+        DrawCurrentModPick(b);
+
+        SubIconDisplay.Draw(b);
+        if (hoverText != null)
+            drawHoverText(b, hoverText, Game1.smallFont);
+        drawMouse(b, ignore_transparency: true);
+    }
+
+    private void DrawCurrentModPick(SpriteBatch b)
+    {
+        if (CurrentMod == null)
+        {
+            b.DrawString(
+                Game1.dialogueFont,
+                ModEntry.translation.Get("config.NoPack.name"),
+                new(xPositionOnScreen + 20, yPositionOnScreen + 20),
+                Game1.textColor
+            );
+            return;
+        }
+
         if (AtlasCurrIdx < 0)
         {
             SpriteText.drawStringWithScrollCenteredAt(
@@ -603,11 +621,6 @@ internal sealed class ModSpritePicker : IClickableMenu
                 atlas.Enabled ? atlas.ChosenIdx + 1 : 0
             );
         }
-
-        SubIconDisplay.Draw(b);
-        if (hoverText != null)
-            drawHoverText(b, hoverText, Game1.smallFont);
-        drawMouse(b, ignore_transparency: true);
     }
 
     public override void receiveLeftClick(int x, int y, bool playSound = true)
@@ -1026,18 +1039,15 @@ internal sealed class ModSpritePicker : IClickableMenu
             NextMod();
         }
 
-        if (PopulateDisplayData())
+        PopulateDisplayData();
+        RecenterMenu();
+        if (Game1.options.snappyMenus && Game1.options.gamepadControls)
         {
-            RecenterMenu();
-            if (Game1.options.snappyMenus && Game1.options.gamepadControls)
-            {
-                if (allClickableComponents == null)
-                    populateClickableComponentList();
-                snapToDefaultClickableComponent();
-            }
-            return true;
+            if (allClickableComponents == null)
+                populateClickableComponentList();
+            snapToDefaultClickableComponent();
         }
-        return false;
+        return true;
     }
 
     private void ConsolePickUI(string arg1, string[] arg2)

@@ -15,7 +15,7 @@ internal sealed class ItemSpriteManager
 {
     private readonly IModHelper helper;
 
-    internal readonly Dictionary<IAssetName, ModProidedDataHolder> modDataAssets;
+    internal readonly IReadOnlyDictionary<IAssetName, ModProidedDataHolder> modDataAssets;
     internal readonly Dictionary<string, ItemSpriteComp> qIdToComp = [];
 
     private readonly HashSet<string> needItemSpriteCompRecheck = [];
@@ -42,12 +42,6 @@ internal sealed class ItemSpriteManager
                 loadFrom = bagiCtx.LoadFromBAGI,
             };
             ModEntry.Log($"Tracking '{bagiCtx.DataAsset}' BAGI compat asset for '{bagiCtx.ModManifest.Name}'");
-        }
-
-        if (modDataAssets.Count == 0)
-        {
-            ModEntry.Log("No content packs detected, mod is disabled.", LogLevel.Warn);
-            return null;
         }
 
         return new(helper, modDataAssets);
