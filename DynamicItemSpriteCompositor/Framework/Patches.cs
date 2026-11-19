@@ -253,8 +253,6 @@ internal static class Patches
         if (ModEntry.config.Data.SubIconDisplay == SubIconDisplayMode.None)
             return;
         TryDrawPreserveIcon(__state?.Item1, obj, spriteBatch, x, y, alpha, baseScale, layerDepth);
-        if (obj.heldObject.Value != null && (!obj.bigCraftable.Value || obj.readyForHarvest.Value))
-            TryDrawPreserveIcon(__state?.Item2, obj.heldObject.Value, spriteBatch, x, y, alpha, baseScale, layerDepth);
     }
 
     private static void SObject_draw_Postfix_Pos(
